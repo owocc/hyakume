@@ -179,7 +179,10 @@
     "yes": "Yes",
     "no": "No",
     "moreFromDev": "More from \"{developer}\"",
-    "previewDesktop": "Web Desktop Preview",
+    "previewDesktop": "Desktop (PC)",
+    "previewTablet": "Tablet",
+    "previewMobile": "Mobile",
+    "previewMultiDevice": "PC · Tablet · Mobile Previews",
     "recommendedApps": "Recommended Apps"
   }
 }

@@ -86,7 +86,14 @@ export async function getImageFromStorage(
       const buf = fs.readFileSync(targetPath);
       return {
         data: new Uint8Array(buf),
-        contentType: cleanKey.endsWith(".jpg") || cleanKey.endsWith(".jpeg") ? "image/jpeg" : "image/png",
+        contentType:
+          cleanKey.endsWith(".jpg") || cleanKey.endsWith(".jpeg")
+            ? "image/jpeg"
+            : cleanKey.endsWith(".webp")
+            ? "image/webp"
+            : cleanKey.endsWith(".svg")
+            ? "image/svg+xml"
+            : "image/png",
       };
     }
   } catch (err) {

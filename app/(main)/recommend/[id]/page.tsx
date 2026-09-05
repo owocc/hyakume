@@ -32,8 +32,8 @@ interface StepConfig {
 const STEP_CONFIGS: StepConfig[] = [
   {
     id: 1,
-    title: "页面渲染与快照",
-    subLabel: "Browser Use 快照截取",
+    title: "页面渲染与多端快照",
+    subLabel: "PC / 平板 / 手机三端截取",
     category: "Snapshot",
     bgColor: "var(--step-1-bg)",
     borderColor: "var(--step-1-border)",
@@ -54,10 +54,10 @@ const STEP_CONFIGS: StepConfig[] = [
     ),
     generateLogs: (targetUrl: string) => [
       `[BROWSER] Initializing Cloudflare Browser Use runtime...`,
-      `[BROWSER] Navigating to ${targetUrl} with viewport 1280x720`,
-      `[BROWSER] Waiting for network idle & DOMContentLoaded signal...`,
-      `[SNAPSHOT] Capturing 16:9 full-fidelity viewport snapshot...`,
-      `[SNAPSHOT] Image buffer captured successfully: 1280x720 WebP ready.`,
+      `[PC VIEWPORT] Navigating to ${targetUrl} (1440x900) & capturing desktop snapshot...`,
+      `[TABLET VIEWPORT] Switching viewport to 768x1024 & capturing tablet snapshot...`,
+      `[MOBILE VIEWPORT] Switching viewport to 390x844 & capturing mobile snapshot...`,
+      `[SNAPSHOT] Multi-device snapshots (PC/Tablet/Mobile) captured successfully.`,
     ],
   },
   {
@@ -88,7 +88,7 @@ const STEP_CONFIGS: StepConfig[] = [
   },
   {
     id: 3,
-    title: "智能封面决策与存储",
+    title: "多端截图上传与存储",
     subLabel: "Cloudflare R2 存储",
     category: "Storage",
     bgColor: "var(--step-3-bg)",
@@ -105,10 +105,10 @@ const STEP_CONFIGS: StepConfig[] = [
       </svg>
     ),
     generateLogs: (_targetUrl: string, app?: AppItem | null) => [
-      `[STORAGE] Comparing OpenGraph preview image vs headless screenshot...`,
-      `[DECISION] Headless screenshot selected for 16:9 ultra-clean standard.`,
-      `[R2] Uploading optimized assets to Cloudflare R2 bucket...`,
-      `[CDN] Generated CDN URL: ${app?.cover_url || "https://assets.webappstore/covers/..."}`,
+      `[STORAGE] Uploading PC, tablet, and mobile screenshots to Cloudflare R2...`,
+      `[STORAGE] Saving snapshots under screenshots/... key format`,
+      `[CDN] Multi-device image URLs configured for web showcase`,
+      `[CDN] Generated Cover URL: ${app?.cover_url || "/api/images/screenshots/..."}`,
       `[CACHE] Asset caching policy configured: Cache-Control public, max-age=31536000`,
     ],
   },

@@ -12,6 +12,8 @@ import {
   ChevronRight,
   ImageOff,
   Laptop,
+  Tablet,
+  Smartphone,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { AppItem, ReviewItem } from "@/lib/types";
@@ -146,6 +148,19 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
   const allImagesFailed =
     previewImages.length > 0 &&
     previewImages.every((_, i) => failedImages[i]);
+  // Detect device category (PC, Tablet, Mobile) from screenshot URL or index
+  const getImageDevice = (url: string, index: number) => {
+    if (url.includes("-pc-")) return { type: "pc", label: t("previewDesktop"), icon: Laptop };
+    if (url.includes("-tablet-")) return { type: "tablet", label: t("previewTablet"), icon: Tablet };
+    if (url.includes("-mobile-")) return { type: "mobile", label: t("previewMobile"), icon: Smartphone };
+    if (previewImages.length === 3) {
+      if (index === 0) return { type: "pc", label: t("previewDesktop"), icon: Laptop };
+      if (index === 1) return { type: "tablet", label: t("previewTablet"), icon: Tablet };
+      if (index === 2) return { type: "mobile", label: t("previewMobile"), icon: Smartphone };
+    }
+    return null;
+  };
+
 
   // Keyboard navigation for Lightbox
   useEffect(() => {
@@ -346,38 +361,57 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
           ) : (
             <div className="space-y-2">
               <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-none snap-x">
-                {previewImages.map((img, i) => (
-                  <div
-                    key={i}
-                    onClick={() => {
-                      if (!failedImages[i]) {
-                        setActiveImageIndex(i);
-                      }
-                    }}
-                    className="snap-start shrink-0 rounded-2xl overflow-hidden border border-border shadow-xs bg-card group relative cursor-zoom-in hover:border-primary/50 transition-colors"
-                    title={t("preview")}
-                  >
-                    {failedImages[i] ? (
-                      <div className="h-[260px] sm:h-[320px] w-[460px] max-w-[85vw] bg-muted flex flex-col items-center justify-center text-muted-foreground gap-2 select-none border border-border">
-                        <ImageOff className="w-8 h-8 stroke-[1.5]" />
-                        <span className="text-xs font-medium">{t("noPreview")}</span>
-                      </div>
-                    ) : (
-                      <img
-                        src={img}
-                        alt={`${app.name} preview ${i + 1}`}
-                        onError={() => {
-                          setFailedImages((prev) => ({ ...prev, [i]: true }));
-                        }}
-                        className="h-[260px] sm:h-[320px] w-auto max-w-[620px] object-cover transition duration-300 group-hover:scale-[1.01]"
-                      />
-                    )}
-                  </div>
-                ))}
+                {previewImages.map((img, i) => {
+                  const device = getImageDevice(img, i);
+                  return (
+                    <div
+                      key={i}
+                      onClick={() => {
+                        if (!failedImages[i]) {
+                          setActiveImageIndex(i);
+                        }
+                      }}
+                      className="snap-start shrink-0 rounded-2xl overflow-hidden border border-border shadow-xs bg-card group relative cursor-zoom-in hover:border-primary/50 transition-colors"
+                      title={device ? device.label : t("preview")}
+                    >
+                      {device && !failedImages[i] && (
+                        <div className="absolute top-3 left-3 z-10 px-2.5 py-1 rounded-full bg-black/65 backdrop-blur-md text-white text-[11px] font-medium flex items-center gap-1.5 shadow-xs border border-white/15 pointer-events-none">
+                          <device.icon className="w-3 h-3" />
+                          <span>{device.label}</span>
+                        </div>
+                      )}
+                      {failedImages[i] ? (
+                        <div className="h-[260px] sm:h-[320px] w-[460px] max-w-[85vw] bg-muted flex flex-col items-center justify-center text-muted-foreground gap-2 select-none border border-border">
+                          <ImageOff className="w-8 h-8 stroke-[1.5]" />
+                          <span className="text-xs font-medium">{t("noPreview")}</span>
+                        </div>
+                      ) : (
+                        <img
+                          src={img}
+                          alt={`${app.name} preview ${i + 1}`}
+                          onError={() => {
+                            setFailedImages((prev) => ({ ...prev, [i]: true }));
+                          }}
+                          className="h-[260px] sm:h-[320px] w-auto max-w-[620px] object-cover transition duration-300 group-hover:scale-[1.01]"
+                        />
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground pt-1">
-                <Laptop className="w-3.5 h-3.5" />
-                <span>{t("previewDesktop")}</span>
+              <div className="flex items-center gap-4 text-xs text-muted-foreground pt-1 flex-wrap">
+                <span className="flex items-center gap-1.5 font-medium">
+                  <Laptop className="w-3.5 h-3.5 text-primary" />
+                  <span>{t("previewDesktop")}</span>
+                </span>
+                <span className="flex items-center gap-1.5 font-medium">
+                  <Tablet className="w-3.5 h-3.5 text-primary" />
+                  <span>{t("previewTablet")}</span>
+                </span>
+                <span className="flex items-center gap-1.5 font-medium">
+                  <Smartphone className="w-3.5 h-3.5 text-primary" />
+                  <span>{t("previewMobile")}</span>
+                </span>
               </div>
             </div>
           )}
@@ -905,9 +939,22 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
               alt={`${app.name} preview full ${activeImageIndex + 1}`}
               className="max-h-[80vh] max-w-full w-auto h-auto object-contain rounded-2xl shadow-2xl border border-white/10"
             />
-            <span className="text-white/60 text-xs mt-3 font-mono">
-              {activeImageIndex + 1} / {previewImages.length}
-            </span>
+            {(() => {
+              const dev = getImageDevice(previewImages[activeImageIndex], activeImageIndex);
+              return (
+                <div className="flex items-center gap-2 mt-3">
+                  {dev && (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/15 text-white text-xs font-medium border border-white/20">
+                      <dev.icon className="w-3 h-3" />
+                      {dev.label}
+                    </span>
+                  )}
+                  <span className="text-white/60 text-xs font-mono">
+                    {activeImageIndex + 1} / {previewImages.length}
+                  </span>
+                </div>
+              );
+            })()}
           </div>
 
           {previewImages.length > 1 && (

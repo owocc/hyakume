@@ -4,7 +4,7 @@ import { drizzle as drizzleNeon, type NeonHttpDatabase } from "drizzle-orm/neon-
 import { neon, type NeonQueryFunction } from "@neondatabase/serverless";
 import { eq, or, and, ilike, desc, asc, type SQL } from "drizzle-orm";
 import pg from "pg";
-import type { AppItem, ReviewItem, CategoryItem } from "../types";
+import type { AppItem, ReviewItem, CategoryItem, DeviceScreenshots } from "../types";
 import * as schema from "./schema";
 import { appsTable, reviewsTable, categoriesTable } from "./schema";
 
@@ -152,6 +152,21 @@ function rowToApp(row: schema.AppSelect | Record<string, unknown>): AppItem {
     cover_url: String(row.cover_url || ""),
     seo_image: row.seo_image ? String(row.seo_image) : undefined,
     screenshots: parseJsonArray<string>(row.screenshots, []),
+    device_screenshots: (() => {
+      const scs = parseJsonArray<string>(row.screenshots, []);
+      const ds: DeviceScreenshots = {};
+      for (const s of scs) {
+        if (s.includes("-pc-")) ds.pc = s;
+        else if (s.includes("-tablet-")) ds.tablet = s;
+        else if (s.includes("-mobile-")) ds.mobile = s;
+      }
+      if (scs.length === 3 && !ds.pc && !ds.tablet && !ds.mobile) {
+        ds.pc = scs[0];
+        ds.tablet = scs[1];
+        ds.mobile = scs[2];
+      }
+      return Object.keys(ds).length > 0 ? ds : undefined;
+    })(),
     preview_features: parseJsonArray<string>(row.preview_features, []),
     description: String(row.description || ""),
     rating: Number(row.rating) || 4.5,

@@ -1,3 +1,9 @@
+export interface DeviceScreenshots {
+  pc?: string;
+  tablet?: string;
+  mobile?: string;
+}
+
 export interface AppItem {
   id: string;
   name: string;
@@ -12,6 +18,7 @@ export interface AppItem {
   primary_color?: string;
   seo_image?: string;
   screenshots: string[];
+  device_screenshots?: DeviceScreenshots;
   preview_features: string[];
   description: string;
   rating: number;
@@ -77,6 +84,7 @@ export interface AnalyzeResult {
   seo_image?: string;
   primary_color?: string;
   screenshots: string[];
+  device_screenshots?: DeviceScreenshots;
   preview_features: string[];
   description: string;
   rating: number;

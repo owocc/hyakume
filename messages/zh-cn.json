@@ -179,7 +179,10 @@
     "yes": "是",
     "no": "否",
     "moreFromDev": "更多来自\"{developer}\"的 App",
-    "previewDesktop": "Web 桌面端预览",
+    "previewDesktop": "PC 桌面端",
+    "previewTablet": "平板端",
+    "previewMobile": "手机端",
+    "previewMultiDevice": "PC · 平板 · 手机三端预览",
     "recommendedApps": "相关应用推荐"
   }
 }

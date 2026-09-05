@@ -312,6 +312,7 @@ export async function summarizeWithAgent(crawl: CrawlResult): Promise<AppItem> {
     primary_color: crawl.primaryColor,
     seo_image: crawl.seoImage,
     screenshots: crawl.screenshots,
+    device_screenshots: crawl.deviceScreenshots,
     preview_features: previewFeatures,
     description,
     rating: 4.8,

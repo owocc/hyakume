@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Laptop, Tablet, Smartphone } from "lucide-react";
 import type { AppItem } from "@/lib/types";
 
 interface Props {
@@ -71,20 +72,41 @@ export function SearchCard({ app }: Props) {
           href={`/app/${app.id}`}
           className={`grid ${gridColsClass} gap-2 bg-surface p-2.5 rounded-2xl border border-border/60 overflow-hidden`}
         >
-          {screenshots.map((imgUrl, i) => (
-            <div
-              key={i}
-              className="bg-card rounded-xl overflow-hidden border border-border/80 flex flex-col h-44 relative group/img"
-            >
-              <div className="flex-1 overflow-hidden relative bg-muted">
-                <img
-                  src={imgUrl}
-                  alt={`${app.name} preview ${i + 1}`}
-                  className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-300"
-                />
+          {screenshots.map((imgUrl, i) => {
+            const getDevice = () => {
+              if (imgUrl.includes("-pc-")) return { label: "PC", icon: Laptop };
+              if (imgUrl.includes("-tablet-")) return { label: "Tablet", icon: Tablet };
+              if (imgUrl.includes("-mobile-")) return { label: "Mobile", icon: Smartphone };
+              if (screenshots.length === 3) {
+                if (i === 0) return { label: "PC", icon: Laptop };
+                if (i === 1) return { label: "Tablet", icon: Tablet };
+                if (i === 2) return { label: "Mobile", icon: Smartphone };
+              }
+              return null;
+            };
+            const device = getDevice();
+
+            return (
+              <div
+                key={i}
+                className="bg-card rounded-xl overflow-hidden border border-border/80 flex flex-col h-44 relative group/img"
+              >
+                {device && (
+                  <div className="absolute top-2 left-2 z-10 px-2 py-0.5 rounded-md bg-black/65 backdrop-blur-md text-white text-[10px] font-medium flex items-center gap-1 border border-white/10 shadow-xs pointer-events-none">
+                    <device.icon className="w-2.5 h-2.5" />
+                    <span>{device.label}</span>
+                  </div>
+                )}
+                <div className="flex-1 overflow-hidden relative bg-muted">
+                  <img
+                    src={imgUrl}
+                    alt={`${app.name} preview ${i + 1}`}
+                    className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-300"
+                  />
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </Link>
       )}
     </div>

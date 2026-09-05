@@ -1,6 +1,12 @@
 import { getCloudflareEnv } from "./cf-env";
 import { uploadImageToR2 } from "./storage";
 
+export interface DeviceScreenshots {
+  pc?: string;
+  tablet?: string;
+  mobile?: string;
+}
+
 export interface CrawlResult {
   url: string;
   title: string;
@@ -12,8 +18,21 @@ export interface CrawlResult {
   primaryColor?: string;
   screenshots: string[];
   screenshotBuffer?: Uint8Array;
+  deviceScreenshots?: DeviceScreenshots;
   usedSeoImage: boolean;
 }
+
+export const DEVICE_VIEWPORTS = {
+  pc: { width: 1440, height: 900, deviceScaleFactor: 1, isMobile: false, hasTouch: false },
+  tablet: { width: 768, height: 1024, deviceScaleFactor: 2, isMobile: true, hasTouch: true },
+  mobile: { width: 390, height: 844, deviceScaleFactor: 2, isMobile: true, hasTouch: true },
+} as const;
+function sleep(ms: number): Promise<void> {
+  const { promise, resolve } = Promise.withResolvers<void>();
+  setTimeout(resolve, ms);
+  return promise;
+}
+
 
 /**
  * Normalize and validate URL
@@ -161,6 +180,9 @@ export async function crawlWebsite(targetUrl: string): Promise<CrawlResult> {
   let seoImage = "";
   let iconUrl = `https://www.google.com/s2/favicons?domain=${parsedUrl.hostname}&sz=128`;
   let screenshotBuffer: Uint8Array | undefined;
+  let pcScreenshotBuffer: Uint8Array | undefined;
+  let tabletScreenshotBuffer: Uint8Array | undefined;
+  let mobileScreenshotBuffer: Uint8Array | undefined;
   let primaryColor: string | undefined;
 
   // 1. Try Cloudflare Browser Rendering if MYBROWSER binding is present (with 15s timeout)
@@ -168,90 +190,143 @@ export async function crawlWebsite(targetUrl: string): Promise<CrawlResult> {
     try {
       const browserPromise = (async () => {
         const puppeteer = await import("@cloudflare/puppeteer");
-        const browser = await puppeteer.default.launch(
-          env.MYBROWSER as unknown as Parameters<typeof puppeteer.default.launch>[0]
-        );
-        const page = await browser.newPage();
-        await page.setViewport({ width: 1280, height: 720 }); // 16:9 ratio
-        await page.goto(url, { waitUntil: "networkidle2", timeout: 15000 });
+        let browser;
+        try {
+          browser = await puppeteer.default.launch(
+            env.MYBROWSER as unknown as Parameters<typeof puppeteer.default.launch>[0]
+          );
+          const page = await browser.newPage();
 
-        // Extract metadata from DOM
-        const metadata = await page.evaluate(() => {
-          const getMeta = (name: string) =>
-            document.querySelector(`meta[property="${name}"]`)?.getAttribute("content") ||
-            document.querySelector(`meta[name="${name}"]`)?.getAttribute("content") ||
-            "";
-
-          const ogTitle = getMeta("og:title") || document.title || "";
-          const ogDesc = getMeta("og:description") || getMeta("description") || "";
-          const ogImg = getMeta("og:image") || getMeta("twitter:image") || "";
-
-          const iconEl = document.querySelector('link[rel="icon"], link[rel="shortcut icon"]');
-          const icon = iconEl?.getAttribute("href") || "";
-
-          const bodyText = document.body.innerText || "";
-          const themeColor =
-            document.querySelector('meta[name="theme-color"]')?.getAttribute("content") ||
-            document.querySelector('meta[name="msapplication-TileColor"]')?.getAttribute("content") ||
-            "";
-
-          // Sample colors across the page to find the dominant color (占据封面图最大的颜色)
-          const colorCounts: Record<string, number> = {};
-          const recordColor = (c: string | null | undefined) => {
-            if (!c || c === "rgba(0, 0, 0, 0)" || c === "transparent") return;
-            colorCounts[c] = (colorCounts[c] || 0) + 1;
-          };
-
-          if (themeColor) recordColor(themeColor);
-
+          // 1. Initial PC (Desktop) Viewport & Navigation
+          await page.setViewport(DEVICE_VIEWPORTS.pc);
           try {
-            const docBg = window.getComputedStyle(document.documentElement).backgroundColor;
-            const bodyBg = window.getComputedStyle(document.body).backgroundColor;
-            recordColor(docBg);
-            recordColor(bodyBg);
+            await page.goto(url, { waitUntil: "networkidle2", timeout: 20000 });
+          } catch (navErr) {
+            console.warn("Navigation with networkidle2 timed out, continuing with loaded DOM:", navErr);
+          }
 
-            // Sample 30 points across the top 60% of viewport (where card text and artwork sit)
-            const width = window.innerWidth || 1280;
-            const height = (window.innerHeight || 720) * 0.6;
-            const stepX = Math.floor(width / 6);
-            const stepY = Math.floor(height / 5);
-            for (let x = stepX / 2; x < width; x += stepX) {
-              for (let y = stepY / 2; y < height; y += stepY) {
-                const el = document.elementFromPoint(x, y);
-                if (el) {
-                  const bg = window.getComputedStyle(el).backgroundColor;
-                  recordColor(bg);
-                }
-              }
-            }
+          // Allow web fonts and animations to settle
+          try {
+            await page.evaluate(() => document.fonts?.ready);
           } catch {
             // ignore
           }
+          await sleep(600);
 
-          let detectedColor = themeColor || "";
-          let maxFreq = 0;
-          for (const [col, freq] of Object.entries(colorCounts)) {
-            if (freq > maxFreq) {
-              maxFreq = freq;
-              detectedColor = col;
+          // Extract metadata from DOM
+          const metadata = await page.evaluate(() => {
+            const getMeta = (name: string) =>
+              document.querySelector(`meta[property="${name}"]`)?.getAttribute("content") ||
+              document.querySelector(`meta[name="${name}"]`)?.getAttribute("content") ||
+              "";
+
+            const ogTitle = getMeta("og:title") || document.title || "";
+            const ogDesc = getMeta("og:description") || getMeta("description") || "";
+            const ogImg = getMeta("og:image") || getMeta("twitter:image") || "";
+
+            const iconEl = document.querySelector('link[rel="icon"], link[rel="shortcut icon"]');
+            const icon = iconEl?.getAttribute("href") || "";
+
+            const bodyText = document.body.innerText || "";
+            const themeColor =
+              document.querySelector('meta[name="theme-color"]')?.getAttribute("content") ||
+              document.querySelector('meta[name="msapplication-TileColor"]')?.getAttribute("content") ||
+              "";
+
+            // Sample colors across the page to find the dominant color (占据封面图最大的颜色)
+            const colorCounts: Record<string, number> = {};
+            const recordColor = (c: string | null | undefined) => {
+              if (!c || c === "rgba(0, 0, 0, 0)" || c === "transparent") return;
+              colorCounts[c] = (colorCounts[c] || 0) + 1;
+            };
+
+            if (themeColor) recordColor(themeColor);
+
+            try {
+              const docBg = window.getComputedStyle(document.documentElement).backgroundColor;
+              const bodyBg = window.getComputedStyle(document.body).backgroundColor;
+              recordColor(docBg);
+              recordColor(bodyBg);
+
+              // Sample 30 points across the top 60% of viewport (where card text and artwork sit)
+              const width = window.innerWidth || 1440;
+              const height = (window.innerHeight || 900) * 0.6;
+              const stepX = Math.floor(width / 6);
+              const stepY = Math.floor(height / 5);
+              for (let x = stepX / 2; x < width; x += stepX) {
+                for (let y = stepY / 2; y < height; y += stepY) {
+                  const el = document.elementFromPoint(x, y);
+                  if (el) {
+                    const bg = window.getComputedStyle(el).backgroundColor;
+                    recordColor(bg);
+                  }
+                }
+              }
+            } catch {
+              // ignore
             }
-          }
-          return { ogTitle, ogDesc, ogImg, icon, bodyText: bodyText.slice(0, 3000), detectedColor };
-        });
 
-        const rawScreenshot = await page.screenshot({ type: "png" });
-        await browser.close();
-        return { metadata, rawScreenshot };
+            let detectedColor = themeColor || "";
+            let maxFreq = 0;
+            for (const [col, freq] of Object.entries(colorCounts)) {
+              if (freq > maxFreq) {
+                maxFreq = freq;
+                detectedColor = col;
+              }
+            }
+            return { ogTitle, ogDesc, ogImg, icon, bodyText: bodyText.slice(0, 3000), detectedColor };
+          });
+
+          // Capture PC screenshot
+          let rawPcScreenshot: Uint8Array | undefined;
+          try {
+            const rawPc = await page.screenshot({ type: "png" });
+            rawPcScreenshot = new Uint8Array(rawPc);
+          } catch (pcErr) {
+            console.warn("PC screenshot capture failed:", pcErr);
+          }
+
+          // 2. Switch to Tablet Viewport & capture
+          let rawTabletScreenshot: Uint8Array | undefined;
+          try {
+            await page.setViewport(DEVICE_VIEWPORTS.tablet);
+            await sleep(600);
+            const rawTablet = await page.screenshot({ type: "png" });
+            rawTabletScreenshot = new Uint8Array(rawTablet);
+          } catch (tabErr) {
+            console.warn("Tablet screenshot capture failed:", tabErr);
+          }
+
+          // 3. Switch to Mobile Viewport & capture
+          let rawMobileScreenshot: Uint8Array | undefined;
+          try {
+            await page.setViewport(DEVICE_VIEWPORTS.mobile);
+            await sleep(600);
+            const rawMobile = await page.screenshot({ type: "png" });
+            rawMobileScreenshot = new Uint8Array(rawMobile);
+          } catch (mobErr) {
+            console.warn("Mobile screenshot capture failed:", mobErr);
+          }
+
+          return {
+            metadata,
+            rawPcScreenshot,
+            rawTabletScreenshot,
+            rawMobileScreenshot,
+          };
+        } finally {
+          if (browser) {
+            await browser.close().catch(() => {});
+          }
+        }
       })();
 
-      const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("Browser launch timed out")), 15000)
-      );
+      const { promise: timeoutPromise, reject: rejectTimeout } = Promise.withResolvers<never>();
+      const timer = setTimeout(() => rejectTimeout(new Error("Browser launch timed out")), 35000);
 
-      const { metadata, rawScreenshot } = await Promise.race([
-        browserPromise,
-        timeoutPromise,
-      ]);
+      const { metadata, rawPcScreenshot, rawTabletScreenshot, rawMobileScreenshot } =
+        await Promise.race([browserPromise, timeoutPromise]);
+      clearTimeout(timer);
 
       title = metadata.ogTitle || parsedUrl.hostname;
       description = metadata.ogDesc;
@@ -276,7 +351,10 @@ export async function crawlWebsite(targetUrl: string): Promise<CrawlResult> {
           // keep fallback
         }
       }
-      screenshotBuffer = new Uint8Array(rawScreenshot);
+      pcScreenshotBuffer = rawPcScreenshot;
+      tabletScreenshotBuffer = rawTabletScreenshot;
+      mobileScreenshotBuffer = rawMobileScreenshot;
+      screenshotBuffer = rawPcScreenshot;
     } catch (browserErr) {
       console.warn("Cloudflare Browser Rendering encountered an issue, falling back to HTTP crawl:", browserErr);
     }
@@ -315,35 +393,108 @@ export async function crawlWebsite(targetUrl: string): Promise<CrawlResult> {
     title = parsedUrl.hostname.replace(/^www\./, "");
   }
 
-  // 3. Process Cover Image (per prompt requirement):
-  // "如果有提供meta图片则使用seo图片，如果没有就由Agent 自动截图，截图后上传到 r2，并转为 url 提供网页使用"
-  // "对于有seo优化的网站可以节省空间不存储图片"
+  // 3. Upload Multi-Device Screenshots to Cloudflare R2 / Storage
+  let pcScreenshotUrl: string | undefined;
+  let tabletScreenshotUrl: string | undefined;
+  let mobileScreenshotUrl: string | undefined;
+
+  const fileSlug = parsedUrl.hostname.replace(/[^a-zA-Z0-9]/g, "-");
+  const timestamp = Date.now();
+
+  const uploadTasks: Promise<{ type: "pc" | "tablet" | "mobile"; url: string } | null>[] = [];
+
+  if (pcScreenshotBuffer) {
+    uploadTasks.push(
+      uploadImageToR2(
+        `screenshots/${fileSlug}-pc-${timestamp}.png`,
+        pcScreenshotBuffer,
+        "image/png"
+      )
+        .then((res) => ({ type: "pc" as const, url: res.url }))
+        .catch((err) => {
+          console.error("Failed to upload PC screenshot to storage:", err);
+          return null;
+        })
+    );
+  }
+
+  if (tabletScreenshotBuffer) {
+    uploadTasks.push(
+      uploadImageToR2(
+        `screenshots/${fileSlug}-tablet-${timestamp}.png`,
+        tabletScreenshotBuffer,
+        "image/png"
+      )
+        .then((res) => ({ type: "tablet" as const, url: res.url }))
+        .catch((err) => {
+          console.error("Failed to upload tablet screenshot to storage:", err);
+          return null;
+        })
+    );
+  }
+
+  if (mobileScreenshotBuffer) {
+    uploadTasks.push(
+      uploadImageToR2(
+        `screenshots/${fileSlug}-mobile-${timestamp}.png`,
+        mobileScreenshotBuffer,
+        "image/png"
+      )
+        .then((res) => ({ type: "mobile" as const, url: res.url }))
+        .catch((err) => {
+          console.error("Failed to upload mobile screenshot to storage:", err);
+          return null;
+        })
+    );
+  }
+
+  if (uploadTasks.length > 0) {
+    const uploadResults = await Promise.all(uploadTasks);
+    for (const item of uploadResults) {
+      if (!item) continue;
+      if (item.type === "pc") pcScreenshotUrl = item.url;
+      if (item.type === "tablet") tabletScreenshotUrl = item.url;
+      if (item.type === "mobile") mobileScreenshotUrl = item.url;
+    }
+  }
+
+  // 4. Process Cover Image
   let coverUrl = "";
   let usedSeoImage = false;
 
   if (seoImage && seoImage.startsWith("http")) {
-    // Website provides SEO image: use it directly! (Saves R2 storage space)
     coverUrl = seoImage;
     usedSeoImage = true;
+  } else if (pcScreenshotUrl) {
+    coverUrl = pcScreenshotUrl;
+    usedSeoImage = false;
   } else {
-    // No SEO image provided: use 16:9 screenshot and upload to Cloudflare R2
-    if (!screenshotBuffer) {
-      screenshotBuffer = generateFallback169Card(title, parsedUrl.hostname);
-      if (!primaryColor) primaryColor = "#3b82f6";
-    }
-
-    const fileSlug = parsedUrl.hostname.replace(/[^a-zA-Z0-9]/g, "-");
-    const r2Key = `covers/${fileSlug}-${Date.now()}.png`;
-
-    const uploadResult = await uploadImageToR2(r2Key, screenshotBuffer, "image/png");
+    // No SEO image and no PC screenshot: generate fallback card
+    const fallbackBuffer = generateFallback169Card(title, parsedUrl.hostname);
+    if (!primaryColor) primaryColor = "#3b82f6";
+    const r2Key = `covers/${fileSlug}-${timestamp}.png`;
+    const uploadResult = await uploadImageToR2(r2Key, fallbackBuffer, "image/png");
     coverUrl = uploadResult.url;
     usedSeoImage = false;
   }
 
-  // Generate screenshot previews for the app details & search preview cards
+  // 5. Assemble Screenshots Array (PC, Tablet, Mobile)
   const screenshots: string[] = [];
-  if (coverUrl) screenshots.push(coverUrl);
-  if (seoImage && seoImage !== coverUrl) screenshots.push(seoImage);
+  if (pcScreenshotUrl) screenshots.push(pcScreenshotUrl);
+  if (tabletScreenshotUrl) screenshots.push(tabletScreenshotUrl);
+  if (mobileScreenshotUrl) screenshots.push(mobileScreenshotUrl);
+
+  // If no device screenshots were captured (e.g. HTTP fallback crawl), fall back to cover/SEO image
+  if (screenshots.length === 0) {
+    if (coverUrl) screenshots.push(coverUrl);
+    if (seoImage && seoImage !== coverUrl) screenshots.push(seoImage);
+  }
+
+  const deviceScreenshots: DeviceScreenshots = {
+    pc: pcScreenshotUrl,
+    tablet: tabletScreenshotUrl,
+    mobile: mobileScreenshotUrl,
+  };
 
   return {
     url,
@@ -356,6 +507,7 @@ export async function crawlWebsite(targetUrl: string): Promise<CrawlResult> {
     primaryColor,
     screenshots,
     screenshotBuffer,
+    deviceScreenshots,
     usedSeoImage,
   };
 }

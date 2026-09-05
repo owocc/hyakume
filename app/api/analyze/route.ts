@@ -37,11 +37,11 @@ export async function POST(request: Request) {
       });
     }
     const steps = [
-      { step: 1, name: "页面渲染与快照截取", status: "processing" },
+      { step: 1, name: "页面渲染与多端快照截取 (PC / 平板 / 手机)", status: "processing" },
       { step: 2, name: "提取网页元数据与文本", status: "pending" },
-      { step: 3, name: "封面图决策与 R2 存储处理", status: "pending" },
+      { step: 3, name: "多端截图与封面图存储至 Storage (R2)", status: "pending" },
       { step: 4, name: "AI Agent 总结应用功能与特色", status: "pending" },
-      { step: 5, name: "结构化写入 Cloudflare D1 数据库", status: "pending" },
+      { step: 5, name: "结构化写入数据库", status: "pending" },
     ];
 
     // 1. Crawl website & capture screenshot/metadata
@@ -68,6 +68,8 @@ export async function POST(request: Request) {
         title: crawlResult.title,
         usedSeoImage: crawlResult.usedSeoImage,
         coverUrl: crawlResult.coverUrl,
+        screenshots: crawlResult.screenshots,
+        deviceScreenshots: crawlResult.deviceScreenshots,
       },
       steps,
     });
