@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { BookFan } from "@/components/book-fan";
 import { Footer } from "@/components/footer";
 import { Logo } from "@/components/logo";
@@ -61,7 +62,8 @@ function WebApp3DIcon() {
   );
 }
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const t = await getTranslations("home");
   return (
     <div className="w-full bg-background text-foreground flex flex-col selection:bg-primary selection:text-primary-foreground transition-colors duration-200">
       {/* 
@@ -77,13 +79,13 @@ export default function LandingPage() {
         {/* Hero Section: Centered Headline, Subtitle, Dual CTAs */}
         <section className="px-6 py-2 text-center max-w-3xl mx-auto z-10 flex flex-col items-center flex-none">
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[52px] font-extrabold tracking-tight text-foreground leading-[1.12]">
-            One Stop Digital
+            {t("heading1")}
             <br />
-            Directory <WebApp3DIcon /> for Web Apps.
+            {t("heading2")} <WebApp3DIcon /> {t("heading3")}
           </h1>
 
           <p className="text-xs sm:text-sm md:text-base text-muted-foreground font-normal mt-2.5 sm:mt-3.5 max-w-lg mx-auto leading-relaxed">
-            现代化 Web App 精选收录平台。发现前沿在线工具，或一键提交推荐与产品投放。
+            {t("subtitle")}
           </p>
 
           {/* Dual Actions: 推荐 / 投放 on left, View Apps on right */}
@@ -92,14 +94,14 @@ export default function LandingPage() {
               href="/recommend"
               className="inline-flex items-center justify-center px-5 py-2.5 rounded-full bg-card text-foreground text-xs sm:text-sm font-medium border border-border hover:bg-surface active:scale-[0.98] transition-all duration-200 shadow-2xs hover:shadow-xs"
             >
-              <span>推荐 / 投放</span>
+              <span>{t("submitCta")}</span>
             </Link>
 
             <Link
               href="/apps"
               className="inline-flex items-center justify-center px-6 py-2.5 rounded-full bg-primary text-primary-foreground text-xs sm:text-sm font-medium hover:bg-primary-hover active:scale-[0.98] transition-all duration-200 shadow-sm hover:shadow-md"
             >
-              View Apps
+              {t("viewApps")}
             </Link>
           </div>
         </section>

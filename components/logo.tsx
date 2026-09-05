@@ -107,7 +107,7 @@ export function Logo({
         <div className="flex items-center gap-2.5">
           <AppIconMark size="sm" />
           <span className="font-semibold text-sm tracking-tight text-foreground">
-            {text} 专区
+            {text}
           </span>
         </div>
       </div>

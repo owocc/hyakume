@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { searchApps } from "@/lib/db";
 import { SearchCard } from "@/components/search-card";
 import Link from "next/link";
@@ -10,7 +11,11 @@ interface Props {
 }
 
 export default async function SearchPage({ searchParams }: Props) {
-  const { q } = await searchParams;
+  const [{ q }, t] = await Promise.all([
+    searchParams,
+    getTranslations("searchPage"),
+  ]);
+
   const query = (q || "App").trim();
   const apps = await searchApps(query);
 
@@ -19,10 +24,10 @@ export default async function SearchPage({ searchParams }: Props) {
       {/* Search Header matching Image #6 */}
       <div className="border-b border-border pb-4">
         <h1 className="text-3xl font-extrabold text-foreground tracking-tight">
-          &ldquo;{query}&rdquo;的搜索结果
+          {t("resultsFor", { query })}
         </h1>
         <p className="text-xs text-muted-foreground mt-1 font-medium">
-          找到 {apps.length} 个相关应用与工具
+          {t("foundCount", { count: apps.length })}
         </p>
       </div>
 
@@ -35,19 +40,19 @@ export default async function SearchPage({ searchParams }: Props) {
         </div>
       ) : (
         <div className="text-center py-20 space-y-4 bg-surface rounded-3xl border border-border">
-          <div className="w-16 h-16 mx-auto rounded-2xl bg-neutral-100 text-black flex items-center justify-center shadow-sm">
+          <div className="w-16 h-16 mx-auto rounded-2xl bg-neutral-100 dark:bg-neutral-800 text-foreground flex items-center justify-center shadow-sm">
             <Sparkles className="w-8 h-8" />
           </div>
-          <h2 className="text-lg font-bold text-foreground">未找到相关应用</h2>
+          <h2 className="text-lg font-bold text-foreground">{t("noResults")}</h2>
           <p className="text-sm text-muted-foreground max-w-md mx-auto">
-            没有找到与 &ldquo;{query}&rdquo; 匹配的应用。你可以使用 AI 一键推荐工具收录它！
+            {t("noResultsDesc", { query })}
           </p>
           <Link
             href="/recommend"
-            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-black hover:bg-neutral-800 text-white font-bold text-xs shadow-md transition"
+            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-primary hover:bg-primary-hover text-primary-foreground font-bold text-xs shadow-md transition"
           >
             <Sparkles className="w-4 h-4" />
-            <span>AI 一键自动化收录</span>
+            <span>{t("autoSubmit")}</span>
           </Link>
         </div>
       )}

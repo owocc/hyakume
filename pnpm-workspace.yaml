@@ -3,3 +3,5 @@ allowBuilds:
   workerd: true
   "@prisma/client": false
   better-sqlite3: false
+  '@parcel/watcher': false
+  '@swc/core': false

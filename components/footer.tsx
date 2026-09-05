@@ -1,8 +1,14 @@
+"use client";
+
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Logo } from "@/components/logo";
-import { SITE_CONFIG } from "@/lib/config";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { LanguageSwitcher } from "@/components/language-switcher";
+
 export function Footer() {
+  const t = useTranslations("footer");
+
   return (
     <footer className="w-full bg-surface-card border-t border-border text-foreground">
       <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-16 py-14 sm:py-16 flex flex-col justify-between min-h-[380px]">
@@ -13,7 +19,7 @@ export function Footer() {
             <Logo variant="footer" href="/" size="md" />
 
             <p className="text-xs sm:text-sm text-muted-foreground max-w-sm leading-relaxed">
-              {SITE_CONFIG.subTagline}
+              {t("subTagline")}
             </p>
 
             {/* Blank placeholder area reserved for future decorative illustration/artwork */}
@@ -25,37 +31,37 @@ export function Footer() {
             {/* Column 1 */}
             <div className="space-y-4">
               <h4 className="text-xs sm:text-sm font-bold tracking-tight text-foreground">
-                发现探索
+                {t("discover")}
               </h4>
               <ul className="space-y-2.5 text-xs sm:text-sm text-muted-foreground">
                 <li>
                   <Link href="/apps" className="hover:text-primary transition-colors">
-                    Apps 精选
+                    {t("appsFeatured")}
                   </Link>
                 </li>
                 <li>
                   <Link href="/category/all" className="hover:text-primary transition-colors">
-                    全部应用
+                    {t("allApps")}
                   </Link>
                 </li>
                 <li>
                   <Link href="/games" className="hover:text-primary transition-colors">
-                    游戏专区
+                    {t("games")}
                   </Link>
                 </li>
                 <li>
                   <Link href="/web" className="hover:text-primary transition-colors">
-                    WEB 应用
+                    {t("web")}
                   </Link>
                 </li>
                 <li>
                   <Link href="/category/tools" className="hover:text-primary transition-colors">
-                    效率工具
+                    {t("tools")}
                   </Link>
                 </li>
                 <li>
                   <Link href="/category/ai" className="hover:text-primary transition-colors">
-                    AI 应用
+                    {t("ai")}
                   </Link>
                 </li>
               </ul>
@@ -64,27 +70,27 @@ export function Footer() {
             {/* Column 2 */}
             <div className="space-y-4">
               <h4 className="text-xs sm:text-sm font-bold tracking-tight text-foreground">
-                收录服务
+                {t("services")}
               </h4>
               <ul className="space-y-2.5 text-xs sm:text-sm text-muted-foreground">
                 <li>
                   <Link href="/recommend" className="hover:text-primary font-semibold transition-colors">
-                    推荐 / 投放应用
+                    {t("submitApp")}
                   </Link>
                 </li>
                 <li>
                   <Link href="/recommend" className="hover:text-primary transition-colors">
-                    AI 自动快照管线
+                    {t("snapshotPipeline")}
                   </Link>
                 </li>
                 <li>
                   <span className="cursor-default text-muted-foreground/70">
-                    收录标准指引
+                    {t("guidelines")}
                   </span>
                 </li>
                 <li>
                   <span className="cursor-default text-muted-foreground/70">
-                    开发者合作
+                    {t("developerCollab")}
                   </span>
                 </li>
               </ul>
@@ -93,27 +99,27 @@ export function Footer() {
             {/* Column 3 */}
             <div className="space-y-4 col-span-2 sm:col-span-1">
               <h4 className="text-xs sm:text-sm font-bold tracking-tight text-foreground">
-                关于平台
+                {t("aboutPlatform")}
               </h4>
               <ul className="space-y-2.5 text-xs sm:text-sm text-muted-foreground">
                 <li>
                   <span className="cursor-default text-muted-foreground/70">
-                    关于我们
+                    {t("aboutUs")}
                   </span>
                 </li>
                 <li>
                   <span className="cursor-default text-muted-foreground/70">
-                    服务条款
+                    {t("terms")}
                   </span>
                 </li>
                 <li>
                   <span className="cursor-default text-muted-foreground/70">
-                    隐私政策
+                    {t("privacy")}
                   </span>
                 </li>
                 <li>
                   <span className="cursor-default text-muted-foreground/70">
-                    联系与反馈
+                    {t("contact")}
                   </span>
                 </li>
               </ul>
@@ -121,12 +127,13 @@ export function Footer() {
           </div>
         </div>
 
-        {/* Bottom Row: Copyright on left, blank slot on right for future social media assets */}
+        {/* Bottom Row: Copyright on left, Theme & Language on right */}
         <div className="border-t border-border pt-8 mt-12 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
-          <p>{SITE_CONFIG.copyright}</p>
+          <p>{t("copyright")}</p>
 
-          {/* Right side: Vercel-style Theme Switcher */}
-          <div className="flex items-center gap-4 justify-end">
+          {/* Right side: Language Switcher & Theme Switcher */}
+          <div className="flex items-center gap-3 justify-end">
+            <LanguageSwitcher />
             <ThemeToggle />
           </div>
         </div>

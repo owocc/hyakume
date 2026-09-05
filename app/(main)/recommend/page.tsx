@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { FloatingBooks } from "@/components/floating-books";
 import { Footer } from "@/components/footer";
 import { Globe, ArrowRight } from "lucide-react";
@@ -19,13 +20,13 @@ export default function RecommendInputPage() {
   const router = useRouter();
   const [url, setUrl] = useState("");
   const [error, setError] = useState("");
-
+  const t = useTranslations("recommend");
   const handleSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const cleanUrl = url.trim();
 
     if (!cleanUrl) {
-      setError("请输入有效的应用网址 (如 https://linear.app)");
+      setError(t("errorInvalidUrl"));
       return;
     }
 
@@ -77,7 +78,7 @@ export default function RecommendInputPage() {
                   setUrl(e.target.value);
                   if (error) setError("");
                 }}
-                placeholder="输入需要收录的 Web App 网址，如 https://linear.app"
+                placeholder={t("urlPlaceholder")}
                 className="w-full bg-transparent text-sm sm:text-base text-foreground placeholder-muted-foreground focus:outline-none"
                 autoFocus
               />
@@ -87,7 +88,7 @@ export default function RecommendInputPage() {
               type="submit"
               className="w-full sm:w-auto px-6 py-3 sm:py-2.5 rounded-xl sm:rounded-full bg-primary text-primary-foreground text-xs sm:text-sm font-medium hover:bg-primary-hover active:scale-[0.98] transition-all flex items-center justify-center gap-2 shrink-0 shadow-sm"
             >
-              <span>AI 自动化收录</span>
+              <span>{t("submitButton")}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </form>
@@ -100,7 +101,7 @@ export default function RecommendInputPage() {
 
           {/* Quick Preset Chips */}
           <div className="mt-4 sm:mt-5 flex flex-wrap items-center justify-center gap-2">
-            <span className="text-xs text-muted-foreground font-medium mr-1">快捷测试:</span>
+            <span className="text-xs text-muted-foreground font-medium mr-1">{t("presetLabel")}</span>
             {PRESET_URLS.map((preset) => (
               <button
                 key={preset.name}

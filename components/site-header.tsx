@@ -2,19 +2,22 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Logo } from "@/components/logo";
 import { useSession, signOut } from "@/lib/auth-client";
+
 export function SiteHeader() {
   const pathname = usePathname();
   const { data: session } = useSession();
+  const t = useTranslations("header");
 
   const navLinks = [
-    { label: "首页", href: "/" },
-    { label: "Apps", href: "/apps" },
-    { label: "游戏", href: "/games" },
-    { label: "WEB", href: "/web" },
-    { label: "全部应用", href: "/category/all" },
-    { label: "推荐收录", href: "/recommend" },
+    { label: t("home"), href: "/" },
+    { label: t("apps"), href: "/apps" },
+    { label: t("games"), href: "/games" },
+    { label: t("web"), href: "/web" },
+    { label: t("allApps"), href: "/category/all" },
+    { label: t("recommend"), href: "/recommend" },
   ];
 
   return (
@@ -24,7 +27,7 @@ export function SiteHeader() {
         <Logo variant="header" href="/" size="sm" />
 
         {/* Navigation Links in Center */}
-        <nav className="flex items-center gap-6 sm:gap-8">
+        <nav className="hidden md:flex items-center gap-6 sm:gap-8">
           {navLinks.map((item) => {
             const isActive =
               pathname === item.href ||
@@ -50,22 +53,22 @@ export function SiteHeader() {
         <div className="flex items-center gap-3 justify-end">
           {session?.user ? (
             <div className="flex items-center gap-2">
-              <span className="text-xs text-neutral-600 font-medium hidden sm:inline max-w-[120px] truncate">
+              <span className="text-xs text-neutral-600 dark:text-neutral-400 font-medium hidden sm:inline max-w-[120px] truncate">
                 {session.user.name || session.user.email}
               </span>
               <button
                 onClick={() => signOut()}
-                className="text-xs px-3 py-1 rounded-full border border-neutral-200 hover:bg-neutral-100 text-neutral-600 font-medium transition cursor-pointer"
+                className="text-xs px-3 py-1 rounded-full border border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 font-medium transition cursor-pointer"
               >
-                退出
+                {t("logout")}
               </button>
             </div>
           ) : (
             <Link
               href="/login"
-              className="text-xs font-semibold px-4 py-1.5 rounded-full bg-neutral-900 text-white hover:bg-neutral-800 active:scale-95 transition-all shadow-sm"
+              className="text-xs font-semibold px-4 py-1.5 rounded-full bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 hover:bg-neutral-800 dark:hover:bg-neutral-200 active:scale-95 transition-all shadow-sm"
             >
-              登录
+              {t("login")}
             </Link>
           )}
         </div>

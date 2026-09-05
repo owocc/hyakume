@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getLocale, getTranslations } from "next-intl/server";
 import { getAllApps, getCategoryById } from "@/lib/db";
 import type { AppItem } from "@/lib/types";
 import { ChevronRight, PlusCircle } from "lucide-react";
@@ -11,7 +12,12 @@ interface Props {
 }
 
 export default async function CategoryPage({ params }: Props) {
-  const { name } = await params;
+  const [{ name }, locale, tCommon] = await Promise.all([
+    params,
+    getLocale(),
+    getTranslations("common"),
+  ]);
+
   const decoded = decodeURIComponent(name).trim();
 
   // Redirect fixed builtin categories to their dedicated top-level routes
@@ -32,7 +38,7 @@ export default async function CategoryPage({ params }: Props) {
 
   // Clean display category title (e.g. "娱乐", "工具", "AI", "全部")
   const categoryTitle = isAll
-    ? "全部"
+    ? tCommon("all")
     : matchedCat
     ? matchedCat.name
     : decoded;
@@ -73,15 +79,19 @@ export default async function CategoryPage({ params }: Props) {
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-foreground text-background text-xs font-semibold hover:opacity-90 transition"
           >
             <PlusCircle className="w-3.5 h-3.5" />
-            推荐收录
+            {tCommon("submit")}
           </Link>
         </div>
 
         {apps.length === 0 ? (
           <div className="text-center py-24 bg-card rounded-3xl border border-border shadow-xs space-y-3">
-            <h3 className="text-lg font-bold text-foreground">暂无该分类收录</h3>
+            <h3 className="text-lg font-bold text-foreground">
+              {locale === "zh-cn" ? "暂无该分类收录" : "No apps in this category"}
+            </h3>
             <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-              当前尚未收录属于【{categoryTitle}】的应用。点击右上角“推荐收录”，立即提交优质 Web App！
+              {locale === "zh-cn"
+                ? `当前尚未收录属于【${categoryTitle}】的应用。点击右上角“推荐收录”，立即提交优质 Web App！`
+                : `No Web Apps under [${categoryTitle}] yet. Click Submit App to add one!`}
             </p>
           </div>
         ) : (
@@ -90,7 +100,9 @@ export default async function CategoryPage({ params }: Props) {
             <section className="space-y-4">
               <div className="flex items-center gap-1">
                 <h2 className="text-lg sm:text-xl font-bold text-foreground tracking-tight">
-                  精选{categoryTitle} App
+                  {locale === "zh-cn"
+                    ? `精选 ${categoryTitle} 应用`
+                    : `Featured ${categoryTitle} Apps`}
                 </h2>
                 <ChevronRight className="w-4 h-4 text-muted-foreground stroke-[2.5]" />
               </div>
@@ -122,20 +134,20 @@ export default async function CategoryPage({ params }: Props) {
 
                     <Link
                       href={`/app/${app.id}`}
-                      className="px-3.5 py-1 rounded-full bg-secondary hover:bg-secondary-hover text-blue-600 dark:text-blue-400 text-xs font-semibold shrink-0 transition-colors"
+                      className="px-3.5 py-1 rounded-full bg-secondary hover:bg-secondary-hover text-foreground text-xs font-semibold shrink-0 transition-colors"
                     >
-                      查看
+                      {tCommon("view")}
                     </Link>
                   </div>
                 ))}
               </div>
             </section>
 
-            {/* Section 2: 免费排行 > (5 columns) */}
+            {/* Section 2: 热门排行 > (5 columns) */}
             <section className="space-y-4">
               <div className="flex items-center gap-1">
                 <h2 className="text-lg sm:text-xl font-bold text-foreground tracking-tight">
-                  免费排行
+                  {locale === "zh-cn" ? "热门排行" : "Top Charts"}
                 </h2>
                 <ChevronRight className="w-4 h-4 text-muted-foreground stroke-[2.5]" />
               </div>
@@ -172,20 +184,20 @@ export default async function CategoryPage({ params }: Props) {
                     {/* Bottom Action */}
                     <Link
                       href={`/app/${app.id}`}
-                      className="mt-3 px-5 py-1 rounded-full bg-secondary hover:bg-secondary-hover text-blue-600 dark:text-blue-400 text-xs font-semibold transition-colors"
+                      className="mt-3 px-5 py-1 rounded-full bg-secondary hover:bg-secondary-hover text-foreground text-xs font-semibold transition-colors"
                     >
-                      查看
+                      {tCommon("view")}
                     </Link>
                   </div>
                 ))}
               </div>
             </section>
 
-            {/* Section 3: 付费排行 > (5 columns) */}
+            {/* Section 3: 精选推荐 > (5 columns) */}
             <section className="space-y-4">
               <div className="flex items-center gap-1">
                 <h2 className="text-lg sm:text-xl font-bold text-foreground tracking-tight">
-                  付费排行
+                  {locale === "zh-cn" ? "精选推荐" : "Editor's Choice"}
                 </h2>
                 <ChevronRight className="w-4 h-4 text-muted-foreground stroke-[2.5]" />
               </div>
@@ -222,9 +234,9 @@ export default async function CategoryPage({ params }: Props) {
                     {/* Bottom Action */}
                     <Link
                       href={`/app/${app.id}`}
-                      className="mt-3 px-5 py-1 rounded-full bg-secondary hover:bg-secondary-hover text-blue-600 dark:text-blue-400 text-xs font-semibold transition-colors"
+                      className="mt-3 px-5 py-1 rounded-full bg-secondary hover:bg-secondary-hover text-foreground text-xs font-semibold transition-colors"
                     >
-                      查看
+                      {tCommon("view")}
                     </Link>
                   </div>
                 ))}
