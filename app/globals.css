@@ -27,6 +27,10 @@
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
 
+  --color-skeleton: var(--skeleton);
+  --color-skeleton-muted: var(--skeleton-muted);
+  --color-skeleton-highlight: var(--skeleton-highlight);
+
   --color-step-1-bg: var(--step-1-bg);
   --color-step-1-border: var(--step-1-border);
   --color-step-1-text: var(--step-1-text);
@@ -87,6 +91,11 @@
   --card: #ffffff;
   --card-foreground: #111827;
 
+  /* Skeleton Loading Colors */
+  --skeleton: #e2e4e9;
+  --skeleton-muted: #f1f2f6;
+  --skeleton-highlight: #d0d3dc;
+
   /* Pipeline Step Colors (Sticky Notes) */
   --step-1-bg: #f3e8ff;
   --step-1-border: #a855f7;
@@ -122,6 +131,26 @@ body {
   margin: 0;
   background-color: var(--background);
   color: var(--foreground);
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.animate-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--skeleton) 0%,
+    var(--skeleton-muted) 45%,
+    var(--skeleton) 90%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
 @layer base {
