@@ -48,7 +48,7 @@ export default function RecommendInputPage() {
   };
 
   return (
-    <div className="w-full bg-white flex flex-col selection:bg-neutral-900 selection:text-white">
+    <div className="w-full bg-background text-foreground flex flex-col selection:bg-primary selection:text-primary-foreground transition-colors duration-200">
       {/* 
         Hero Section: Strict 100dvh height, no overflow, no internal scroll.
         Floating books surround the canvas, center has sleek input box without text.
@@ -66,10 +66,10 @@ export default function RecommendInputPage() {
         <section className="px-6 py-4 w-full max-w-2xl mx-auto z-10 flex flex-col items-center my-auto">
           <form
             onSubmit={handleSubmit}
-            className="w-full bg-white/95 backdrop-blur-md rounded-2xl sm:rounded-full border border-input shadow-[0_12px_40px_-10px_rgba(0,0,0,0.12)] p-2 sm:p-2.5 flex flex-col sm:flex-row items-center gap-2 sm:gap-3 transition-all focus-within:border-primary focus-within:ring-4 focus-within:ring-ring/10"
+            className="w-full bg-card/95 backdrop-blur-md rounded-2xl sm:rounded-full border border-input shadow-xs p-2 sm:p-2.5 flex flex-col sm:flex-row items-center gap-2 sm:gap-3 transition-all focus-within:border-primary focus-within:ring-4 focus-within:ring-ring/10"
           >
             <div className="flex items-center gap-3 flex-1 w-full pl-3 sm:pl-4">
-              <Globe className="w-5 h-5 text-black shrink-0" />
+              <Globe className="w-5 h-5 text-foreground shrink-0" />
               <input
                 type="text"
                 value={url}

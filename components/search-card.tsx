@@ -24,8 +24,8 @@ export function SearchCard({ app }: Props) {
       : "grid-cols-2 sm:grid-cols-4";
 
   return (
-    <div className="bg-card rounded-3xl p-5 border border-border hover:border-neutral-400/70 transition-colors flex flex-col justify-between group">
-      {/* Top Row: Icon, Title, Rating, 查看 Button (Flat, no shadows) */}
+    <div className="bg-card rounded-3xl p-5 border border-border hover:border-neutral-400/70 transition-colors flex flex-col justify-between group shadow-xs">
+      {/* Top Row: Icon, Title, Rating, 查看 Button (Flat, no heavy shadows) */}
       <div className="flex items-start justify-between gap-3 mb-4">
         <Link href={`/app/${app.id}`} className="flex items-center gap-3 min-w-0">
           <img
@@ -34,14 +34,14 @@ export function SearchCard({ app }: Props) {
             className="w-12 h-12 rounded-xl object-cover group-hover:scale-105 transition-transform shrink-0"
           />
           <div className="min-w-0">
-            <h3 className="font-bold text-sm text-foreground truncate group-hover:text-black transition-colors">
+            <h3 className="font-bold text-sm text-foreground truncate group-hover:text-primary transition-colors">
               {app.name}
             </h3>
             <div className="flex flex-wrap gap-1 mt-0.5">
               {(app.categories || [app.category || "WEB"]).map((cat) => (
                 <span
                   key={cat}
-                  className="text-[10px] px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-800 font-medium"
+                  className="text-[10px] px-1.5 py-0.5 rounded bg-secondary text-secondary-foreground font-medium border border-border/60"
                 >
                   {cat}
                 </span>
@@ -59,7 +59,7 @@ export function SearchCard({ app }: Props) {
 
         <Link
           href={`/app/${app.id}`}
-          className="px-4 py-1 rounded-full bg-border-subtle hover:bg-black hover:text-white text-black text-xs font-bold transition-all shrink-0"
+          className="px-4 py-1 rounded-full bg-secondary hover:bg-primary hover:text-primary-foreground text-foreground border border-border text-xs font-bold transition-all shrink-0"
         >
           查看
         </Link>
@@ -76,7 +76,7 @@ export function SearchCard({ app }: Props) {
               key={i}
               className="bg-card rounded-xl overflow-hidden border border-border/80 flex flex-col h-44 relative group/img"
             >
-              <div className="flex-1 overflow-hidden relative bg-neutral-100">
+              <div className="flex-1 overflow-hidden relative bg-muted">
                 <img
                   src={imgUrl}
                   alt={`${app.name} preview ${i + 1}`}

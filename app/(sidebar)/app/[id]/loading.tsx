@@ -2,7 +2,7 @@ import { Skeleton } from "@/components/skeleton";
 
 export default function AppDetailLoading() {
   return (
-    <div className="w-full min-h-screen bg-white p-6 sm:p-10 md:p-12 space-y-10">
+    <div className="w-full min-h-screen bg-background p-6 sm:p-10 md:p-12 space-y-10">
       {/* Top Header Row: Large Icon + App Info + Action Button */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 pb-8 border-b border-border/70">
         <div className="flex items-center gap-6">

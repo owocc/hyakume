@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
   --color-primary: var(--primary);
@@ -125,6 +126,74 @@
   color-scheme: light;
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.dark {
+  /* Primary brand colors (White theme in dark mode) */
+  --primary: #ffffff;
+  --primary-foreground: #000000;
+  --primary-hover: #e4e4e7;
+
+  /* Secondary surface colors */
+  --secondary: #18181b;
+  --secondary-foreground: #f4f4f5;
+  --secondary-hover: #27272a;
+
+  /* Page canvas & typography */
+  --background: #09090b;
+  --foreground: #f4f4f5;
+
+  /* Muted backgrounds and secondary text */
+  --muted: #18181b;
+  --muted-foreground: #a1a1aa;
+
+  /* Surfaces & Containers */
+  --surface: #141417;
+  --surface-card: #111113;
+  --surface-active: #27272a;
+
+  /* Borders & Inputs */
+  --border: #27272a;
+  --border-subtle: #1e1e22;
+  --input-border: #3f3f46;
+  --ring: #ffffff;
+
+  /* Cards */
+  --card: #111113;
+  --card-foreground: #f4f4f5;
+
+  /* Skeleton Loading Colors in dark mode */
+  --skeleton: #27272a;
+  --skeleton-muted: #1c1c20;
+  --skeleton-highlight: #3f3f46;
+
+  /* Pipeline Step Colors (Dark adjusted) */
+  --step-1-bg: #2e1065;
+  --step-1-border: #9333ea;
+  --step-1-text: #e9d5ff;
+  --step-1-strip: #a855f7;
+
+  --step-2-bg: #422006;
+  --step-2-border: #ca8a04;
+  --step-2-text: #fef08a;
+  --step-2-strip: #eab308;
+
+  --step-3-bg: #431407;
+  --step-3-border: #ea580c;
+  --step-3-text: #fed7aa;
+  --step-3-strip: #f97316;
+
+  --step-4-bg: #052e16;
+  --step-4-border: #16a34a;
+  --step-4-text: #bbf7d0;
+  --step-4-strip: #22c55e;
+
+  --step-5-bg: #172554;
+  --step-5-border: #2563eb;
+  --step-5-text: #bfdbfe;
+  --step-5-strip: #3b82f6;
+
+  color-scheme: dark;
 }
 
 body {

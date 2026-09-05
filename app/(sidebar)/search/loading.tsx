@@ -2,7 +2,7 @@ import { Skeleton } from "@/components/skeleton";
 
 export default function SearchLoading() {
   return (
-    <div className="p-8 w-full space-y-8 bg-white min-h-screen">
+    <div className="p-8 w-full space-y-8 bg-background min-h-screen">
       {/* Search Header Skeleton */}
       <div className="border-b border-border pb-4 space-y-3">
         <Skeleton className="h-9 w-64 rounded-xl" />
@@ -14,7 +14,7 @@ export default function SearchLoading() {
         {Array.from({ length: 6 }).map((_, i) => (
           <div
             key={i}
-            className="bg-white rounded-3xl p-5 border border-neutral-200/90 flex flex-col justify-between space-y-5"
+            className="bg-card rounded-3xl p-5 border border-border flex flex-col justify-between space-y-5 shadow-xs"
           >
             {/* Top Row: Icon + Title/Categories + Button */}
             <div className="flex items-start justify-between gap-3">
@@ -33,7 +33,7 @@ export default function SearchLoading() {
             </div>
 
             {/* Bottom Showcase: 3 Screenshot Card Skeletons */}
-            <div className="grid grid-cols-3 gap-2 bg-neutral-100/60 p-2.5 rounded-2xl border border-neutral-200/80">
+            <div className="grid grid-cols-3 gap-2 bg-muted/60 p-2.5 rounded-2xl border border-border">
               {Array.from({ length: 3 }).map((_, j) => (
                 <Skeleton
                   key={j}

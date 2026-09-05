@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { SITE_CONFIG } from "@/lib/config";
+import { ThemeToggle } from "@/components/theme-toggle";
 export function Footer() {
   return (
     <footer className="w-full bg-surface-card border-t border-border text-foreground">
@@ -28,32 +29,32 @@ export function Footer() {
               </h4>
               <ul className="space-y-2.5 text-xs sm:text-sm text-muted-foreground">
                 <li>
-                  <Link href="/apps" className="hover:text-foreground transition-colors">
+                  <Link href="/apps" className="hover:text-primary transition-colors">
                     Apps 精选
                   </Link>
                 </li>
                 <li>
-                  <Link href="/category/all" className="hover:text-foreground transition-colors">
+                  <Link href="/category/all" className="hover:text-primary transition-colors">
                     全部应用
                   </Link>
                 </li>
                 <li>
-                  <Link href="/games" className="hover:text-foreground transition-colors">
+                  <Link href="/games" className="hover:text-primary transition-colors">
                     游戏专区
                   </Link>
                 </li>
                 <li>
-                  <Link href="/web" className="hover:text-foreground transition-colors">
+                  <Link href="/web" className="hover:text-primary transition-colors">
                     WEB 应用
                   </Link>
                 </li>
                 <li>
-                  <Link href="/category/tools" className="hover:text-foreground transition-colors">
+                  <Link href="/category/tools" className="hover:text-primary transition-colors">
                     效率工具
                   </Link>
                 </li>
                 <li>
-                  <Link href="/category/ai" className="hover:text-foreground transition-colors">
+                  <Link href="/category/ai" className="hover:text-primary transition-colors">
                     AI 应用
                   </Link>
                 </li>
@@ -67,12 +68,12 @@ export function Footer() {
               </h4>
               <ul className="space-y-2.5 text-xs sm:text-sm text-muted-foreground">
                 <li>
-                  <Link href="/recommend" className="hover:text-black font-semibold transition-colors">
+                  <Link href="/recommend" className="hover:text-primary font-semibold transition-colors">
                     推荐 / 投放应用
                   </Link>
                 </li>
                 <li>
-                  <Link href="/recommend" className="hover:text-foreground transition-colors">
+                  <Link href="/recommend" className="hover:text-primary transition-colors">
                     AI 自动快照管线
                   </Link>
                 </li>
@@ -124,8 +125,10 @@ export function Footer() {
         <div className="border-t border-border pt-8 mt-12 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
           <p>{SITE_CONFIG.copyright}</p>
 
-          {/* Blank reserved slot for social media icons/images (left empty as requested) */}
-          <div className="flex items-center gap-4 min-w-[140px] justify-end" aria-hidden="true" />
+          {/* Right side: Vercel-style Theme Switcher */}
+          <div className="flex items-center gap-4 justify-end">
+            <ThemeToggle />
+          </div>
         </div>
       </div>
     </footer>

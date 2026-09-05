@@ -41,7 +41,7 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="w-64 min-w-[16rem] h-screen sticky top-0 bg-white border-r border-border flex flex-col select-none z-30 self-start">
+    <aside className="w-64 min-w-[16rem] h-screen sticky top-0 bg-background border-r border-border flex flex-col select-none z-30 self-start transition-colors duration-200">
       {/* Top Section */}
       <div className="p-4 space-y-4 overflow-y-auto h-full">
         {/* Header Branding Dropdown with Logo */}
@@ -75,7 +75,7 @@ export function Sidebar() {
                     : "text-foreground hover:bg-secondary-hover/70"
                 )}
               >
-                <Icon className="w-4 h-4 text-black" />
+                <Icon className="w-4 h-4 text-foreground" />
                 <span>{item.name}</span>
               </Link>
             );
@@ -86,7 +86,7 @@ export function Sidebar() {
         <div className="pt-2">
           <div className="flex items-center justify-between px-3 mb-1 text-[11px] font-semibold text-muted-foreground tracking-wider uppercase">
             <span className="flex items-center gap-1.5">
-              <LayoutGrid className="w-3 h-3 text-black" />
+              <LayoutGrid className="w-3 h-3 text-foreground" />
               类别 (固定)
             </span>
           </div>
@@ -110,7 +110,7 @@ export function Sidebar() {
                       : "text-foreground hover:bg-secondary-hover/70"
                   )}
                 >
-                  <Icon className="w-4 h-4 text-black" />
+                  <Icon className="w-4 h-4 text-foreground" />
                   <span>{cat.name}</span>
                 </Link>
               );

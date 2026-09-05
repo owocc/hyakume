@@ -285,7 +285,7 @@ function RecommendDetailContent() {
   const logs = activeConfig.generateLogs(targetUrl, createdApp);
 
   return (
-    <div className="w-full min-h-screen bg-surface-card flex flex-col justify-between selection:bg-primary selection:text-primary-foreground">
+    <div className="w-full min-h-screen bg-background text-foreground flex flex-col justify-between selection:bg-primary selection:text-primary-foreground transition-colors duration-200">
       {/* Universal Header without login/signup */}
       <SiteHeader />
 
@@ -366,7 +366,7 @@ function RecommendDetailContent() {
               {userSelectedStep !== null && (
                 <button
                   onClick={handleResumeAuto}
-                  className="text-[11px] text-neutral-900 hover:underline flex items-center gap-1 font-medium ml-2"
+                  className="text-[11px] text-foreground hover:underline flex items-center gap-1 font-medium ml-2"
                 >
                   <RotateCcw className="w-3 h-3" />
                   恢复自动轮播
@@ -466,7 +466,7 @@ function RecommendDetailContent() {
           Step Output Text Section: Dynamic log console
           Updates automatically during auto-carousel or when any step is clicked.
         */}
-        <div className="rounded-2xl bg-primary text-primary-foreground p-5 sm:p-7 shadow-lg border border-neutral-800 space-y-4">
+        <div className="rounded-2xl bg-neutral-950 text-neutral-100 p-5 sm:p-7 shadow-lg border border-neutral-800 space-y-4">
           <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
             <div className="flex items-center gap-2.5">
               <Terminal className="w-4 h-4 text-emerald-400" />
@@ -505,8 +505,8 @@ export default function RecommendDetailPage() {
   return (
     <React.Suspense
       fallback={
-        <div className="min-h-screen bg-[#FAF9F7] flex items-center justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-black" />
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-foreground" />
         </div>
       }
     >

@@ -63,7 +63,7 @@ function WebApp3DIcon() {
 
 export default function LandingPage() {
   return (
-    <div className="w-full bg-white flex flex-col selection:bg-neutral-900 selection:text-white">
+    <div className="w-full bg-background text-foreground flex flex-col selection:bg-primary selection:text-primary-foreground transition-colors duration-200">
       {/* 
         Hero Section: Strict 100dvh height viewport.
         overflow-hidden prevents hero scrolling and content clipping/spillover.
