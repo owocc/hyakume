@@ -1,9 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
 import type { AppItem } from "@/lib/types";
-import { getCardTheme } from "@/lib/utils";
 
 interface Props {
   app: AppItem;
@@ -11,122 +9,77 @@ interface Props {
 }
 
 export function HeroFeaturedCard({ app, tag }: Props) {
-  // Initialize with DB primary_color if present
-  const [isLight, setIsLight] = useState<boolean>(() => {
-    return getCardTheme(app.primary_color).isLight;
-  });
-
-  // Client-side image sampling fallback: if no primary_color or to verify cover brightness in text area
-  useEffect(() => {
-    if (app.primary_color) {
-      setIsLight(getCardTheme(app.primary_color).isLight);
-      return;
-    }
-
-    if (!app.cover_url) return;
-
-    // Fast client-side image canvas sampling
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.src = app.cover_url;
-    img.onload = () => {
-      try {
-        const canvas = document.createElement("canvas");
-        canvas.width = 16;
-        canvas.height = 16;
-        const ctx = canvas.getContext("2d");
-        if (ctx) {
-          // Sample the top-left area where the title and tag text sit
-          ctx.drawImage(img, 0, 0, 16, 16);
-          const data = ctx.getImageData(0, 0, 16, 16).data;
-          let rSum = 0;
-          let gSum = 0;
-          let bSum = 0;
-          let count = 0;
-          for (let i = 0; i < data.length; i += 4) {
-            // Ignore transparent pixels
-            if (data[i + 3] > 50) {
-              rSum += data[i];
-              gSum += data[i + 1];
-              bSum += data[i + 2];
-              count++;
-            }
-          }
-          if (count > 0) {
-            const r = rSum / count;
-            const g = gSum / count;
-            const b = bSum / count;
-            const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
-            setIsLight(luminance > 140);
-          }
-        }
-      } catch {
-        // Fallback gracefully on CORS canvas restriction
-      }
-    };
-  }, [app.cover_url, app.primary_color]);
-
-  // Contrast theme
-  const theme = getCardTheme(isLight ? "#ffffff" : "#000000");
+  const coverUrl = app.cover_url ? app.cover_url.replace(/&amp;/g, "&") : "";
 
   return (
     <Link
       href={`/app/${app.id}`}
-      className={`group relative flex-1 min-h-[460px] rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-border flex flex-col justify-between p-7 pb-24 ${
-        isLight ? "bg-[#F5F5F7]" : "bg-neutral-900"
-      }`}
+      className="group relative flex-1 min-h-[460px] rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-border/80 flex flex-col justify-end isolate [transform:translateZ(0)]"
+      style={{
+        // Forces WebKit/Blink hardware compositor to antialias rounded corner clipping perfectly without subpixel dark fringing
+        WebkitMaskImage: "-webkit-radial-gradient(white, black)",
+      }}
     >
+      {/* Cover Image / Animated GIF background */}
       <div
-        className="absolute inset-0 bg-cover bg-center group-hover:scale-105 transition-transform duration-700"
-        style={{ backgroundImage: `url(${app.cover_url})` }}
+        className="absolute inset-0 bg-cover bg-center group-hover:scale-105 transition-transform duration-700 pointer-events-none"
+        style={{ backgroundImage: `url(${coverUrl || app.cover_url})` }}
       />
 
-      {/* Top text with calculated contrast color */}
-      <div className="relative z-10 space-y-1">
-        <span
-          className="text-xs font-bold uppercase tracking-wider block"
-          style={{ color: theme.tagColor }}
-        >
-          {tag}
-        </span>
-        <h2
-          className="text-2xl lg:text-3xl font-extrabold leading-snug tracking-tight max-w-md"
-          style={{ color: theme.textColor }}
-        >
-          {app.name}：{app.tagline}
-        </h2>
-      </div>
-
-      {/* Bottom Info Bar: Flush at bottom, full card width with blur, no rounded corners, no top border */}
+      {/* Bottom Gradient + Backdrop Blur Overlays:
+          Layer 1: Bottom blur layer covering text & info area
+          Layer 2: Seamless dark gradient spanning full card height to gracefully transition from clear cover image to dark readable text base
+      */}
       <div
-        className={`absolute inset-x-0 bottom-0 flex items-center justify-between px-6 py-4 ${theme.barBg}`}
-      >
-        <div className="flex items-center gap-3.5 min-w-0">
-          <img
-            src={app.icon_url}
-            alt={app.name}
-            className="w-12 h-12 rounded-xl object-cover shadow-sm shrink-0"
-          />
-          <div className="min-w-0">
-            <h3
-              className="font-bold text-sm leading-tight truncate"
-              style={{ color: theme.textColor }}
-            >
-              {app.name}
-            </h3>
-            <p
-              className="text-xs truncate mt-0.5"
-              style={{ color: theme.subtitleColor }}
-            >
-              {app.category} • {app.rating}★ ({app.rating_count})
+        className="absolute inset-x-0 bottom-0 h-[60%] pointer-events-none"
+        style={{
+          backdropFilter: "blur(16px)",
+          WebkitBackdropFilter: "blur(16px)",
+          maskImage: "linear-gradient(to top, black 30%, transparent 100%)",
+          WebkitMaskImage: "linear-gradient(to top, black 30%, transparent 100%)",
+        }}
+      />
+      <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/95 via-black/60 via-40% to-transparent" />
+
+      {/* Content Container (Positioned at bottom over the blurred, darkened area) */}
+      <div className="relative z-10 p-6 md:p-7 space-y-4">
+        {/* Upper text block: Tag, Title, Tagline */}
+        <div className="space-y-1.5 max-w-2xl">
+          <span className="text-xs font-semibold uppercase tracking-wider text-white/80 drop-shadow-sm block">
+            {tag}
+          </span>
+          <h2 className="text-2xl lg:text-3xl font-extrabold text-white leading-snug tracking-tight drop-shadow-md">
+            {app.name}：{app.tagline}
+          </h2>
+          {app.preview_features && app.preview_features.length > 0 && (
+            <p className="text-xs md:text-sm text-white/75 line-clamp-1 drop-shadow-sm font-normal pt-0.5">
+              {app.preview_features[0]}
             </p>
-          </div>
+          )}
         </div>
-        <span
-          className={`px-4 py-1.5 rounded-full font-bold text-xs shadow-sm transition shrink-0 ml-3 ${theme.buttonClass}`}
-        >
-          查看
-        </span>
+
+        {/* Bottom App Info Bar: Icon, Name, Category/Rating, Action Button */}
+        <div className="flex items-center justify-between pt-1">
+          <div className="flex items-center gap-3.5 min-w-0">
+            <img
+              src={app.icon_url}
+              alt={app.name}
+              className="w-12 h-12 rounded-xl object-cover shadow-md shrink-0 border border-white/15"
+            />
+            <div className="min-w-0">
+              <h3 className="font-bold text-sm leading-tight text-white truncate drop-shadow-sm">
+                {app.name}
+              </h3>
+              <p className="text-xs text-white/70 truncate mt-0.5 drop-shadow-sm">
+                {app.category} • {app.rating}★ ({app.rating_count})
+              </p>
+            </div>
+          </div>
+
+          <span className="px-4 py-1.5 rounded-full font-bold text-xs text-white bg-white/20 hover:bg-white/30 backdrop-blur-md border border-white/20 shadow-sm transition shrink-0 ml-3">
+            查看
+          </span>
+        </div>
       </div>
     </Link>
   );
