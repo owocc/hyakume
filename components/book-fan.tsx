@@ -250,38 +250,49 @@ export function BookFan() {
     <div className="relative w-full flex justify-center items-end select-none overflow-hidden pt-2 pb-0">
       {/* Outer scale container ensures responsive adaptation */}
       <div className="relative w-full max-w-5xl h-[280px] sm:h-[320px] md:h-[360px] lg:h-[380px] flex justify-center items-end scale-[0.62] xs:scale-[0.72] sm:scale-[0.84] md:scale-[0.94] lg:scale-100 origin-bottom overflow-hidden">
-        {books.map((book) => {
+        {books.map((book, index) => {
           const isHovered = hoveredId === book.id;
           const isAnyHovered = hoveredId !== null;
 
-          return (
-            <Link
-              key={book.id}
-              href="/apps"
-              onMouseEnter={() => setHoveredId(book.id)}
-              onMouseLeave={() => setHoveredId(null)}
-              style={{
-                transform: `translateX(${book.translateX}px) translateY(${
-                  isHovered ? book.translateY - 36 : book.translateY
-                }px) rotate(${isHovered ? book.rotation * 0.4 : book.rotation}deg) scale(${
-                  isHovered ? 1.08 : 1
-                })`,
-                zIndex: isHovered ? 50 : book.zIndex,
-                filter:
-                  isAnyHovered && !isHovered
-                    ? "brightness(0.92) contrast(0.98)"
-                    : "none",
-              }}
-              className="absolute bottom-[-30px] sm:bottom-[-25px] md:bottom-[-20px] w-[180px] sm:w-[210px] md:w-[235px] h-[250px] sm:h-[290px] md:h-[325px] rounded-2xl sm:rounded-3xl cursor-pointer transition-all duration-300 ease-out will-change-transform shadow-[0_20px_45px_-10px_rgba(0,0,0,0.26),0_4px_14px_rgba(0,0,0,0.08)] hover:shadow-[0_32px_65px_-12px_rgba(0,0,0,0.4),0_8px_20px_rgba(0,0,0,0.12)] overflow-hidden border border-black/5"
-            >
-              {/* Paper page edge highlight for realism */}
-              <div className="absolute right-0 top-1 bottom-1 w-[3px] bg-gradient-to-l from-white/90 via-neutral-200 to-transparent pointer-events-none z-30" />
-              {/* Top bevel highlight */}
-              <div className="absolute inset-x-0 top-0 h-[1.5px] bg-white/40 pointer-events-none z-30" />
+          // Staggered entrance: outermost cards appear earliest, center cards appear last
+          // Indices: 0 (leftmost: 0.08s), 5 (rightmost: 0.12s), 1 (0.24s), 4 (0.28s), 2 (0.42s), 3 (0.46s)
+          const delays = [0.08, 0.24, 0.42, 0.46, 0.28, 0.12];
+          const delay = delays[index] ?? 0.2;
 
-              {/* Book cover artwork */}
-              {book.renderCover()}
-            </Link>
+          return (
+            <div
+              key={book.id}
+              style={{
+                animation: `book-fan-popup 1.15s cubic-bezier(0.16, 1, 0.3, 1) ${delay}s both`,
+                zIndex: isHovered ? 50 : book.zIndex,
+              }}
+              className="absolute bottom-[-30px] sm:bottom-[-25px] md:bottom-[-20px] will-change-transform"
+            >
+              <Link
+                href="/apps"
+                onMouseEnter={() => setHoveredId(book.id)}
+                onMouseLeave={() => setHoveredId(null)}
+                style={{
+                  // Hover: Do NOT scale up; only translate upward slightly (-22px) and slightly straighten rotation
+                  transform: `translateX(${book.translateX}px) translateY(${
+                    isHovered ? book.translateY - 22 : book.translateY
+                  }px) rotate(${isHovered ? book.rotation * 0.7 : book.rotation}deg)`,
+                  filter:
+                    isAnyHovered && !isHovered
+                      ? "brightness(0.92) contrast(0.98)"
+                      : "none",
+                }}
+                className="block w-[180px] sm:w-[210px] md:w-[235px] h-[250px] sm:h-[290px] md:h-[325px] rounded-2xl sm:rounded-3xl cursor-pointer transition-transform duration-300 ease-out will-change-transform shadow-[0_20px_45px_-10px_rgba(0,0,0,0.26),0_4px_14px_rgba(0,0,0,0.08)] hover:shadow-[0_28px_55px_-10px_rgba(0,0,0,0.36),0_6px_18px_rgba(0,0,0,0.12)] overflow-hidden border border-black/5"
+              >
+                {/* Paper page edge highlight for realism */}
+                <div className="absolute right-0 top-1 bottom-1 w-[3px] bg-gradient-to-l from-white/90 via-neutral-200 to-transparent pointer-events-none z-30" />
+                {/* Top bevel highlight */}
+                <div className="absolute inset-x-0 top-0 h-[1.5px] bg-white/40 pointer-events-none z-30" />
+
+                {/* Book cover artwork */}
+                {book.renderCover()}
+              </Link>
+            </div>
           );
         })}
       </div>

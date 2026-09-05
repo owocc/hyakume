@@ -299,6 +299,17 @@ body {
     transform: rotate(9deg) translateY(35%) translateX(10%) scale(1);
   }
 }
+/* Book Fan entrance animation from bottom */
+@keyframes book-fan-popup {
+  0% {
+    opacity: 0;
+    transform: translateY(320px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 
 @layer base {
   a {
