@@ -2,37 +2,36 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "hyakume",
   "compatibility_date": "2026-09-05",
-  "compatibility_flags": [
-    "nodejs_compat"
-  ],
+  "compatibility_flags": ["nodejs_compat"],
   "main": "vinext/server/fetch-handler",
   "assets": {
     "directory": "dist/client",
     "not_found_handling": "none",
-    "binding": "ASSETS"
+    "binding": "ASSETS",
   },
   "cache": {
-    "enabled": true
+    "enabled": true,
   },
   "images": {
-    "binding": "IMAGES"
+    "binding": "IMAGES",
   },
   "r2_buckets": [
     {
       "binding": "BUCKET",
-      "bucket_name": "appstore-r2"
-    }
+      "bucket_name": "appstore-r2",
+    },
   ],
   "browser": {
-    "binding": "MYBROWSER"
+    "binding": "MYBROWSER",
   },
   "ai": {
-    "binding": "AI"
+    "binding": "AI",
   },
   "observability": {
     "logs": {
-      "enabled": false,
-      "invocation_logs": true
-    }
-  }
+      "enabled": true,
+      "invocation_logs": true,
+      "persist": true,
+    },
+  },
 }
