@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getAppById, getReviews, getAllApps } from "@/lib/db";
+import { getAppById, getReviews, getAllApps, extractDomain } from "@/lib/db";
 import { AppDetailClient } from "@/components/app-detail-client";
 
 export const dynamic = "force-dynamic";
@@ -18,8 +18,16 @@ export default async function AppDetailPage({ params }: Props) {
 
   const reviews = await getReviews(id);
   const allApps = await getAllApps();
-  const otherApps = allApps.filter((a) => a.id !== app.id);
-
+  const targetDomain = extractDomain(app.url || app.id).cleanDomain;
+  const otherApps = allApps.filter((a) => {
+    if (a.id === app.id) return false;
+    const aDomain = extractDomain(a.url || a.id).cleanDomain;
+    const sameDomain = Boolean(targetDomain && aDomain && targetDomain === aDomain);
+    const sameDevId = Boolean(
+      app.developer_id && a.developer_id && app.developer_id === a.developer_id
+    );
+    return sameDomain || sameDevId;
+  });
   return (
     <div className="w-full min-h-screen">
       <AppDetailClient

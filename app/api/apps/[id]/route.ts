@@ -35,18 +35,19 @@ export async function POST(
 
   try {
     const body = (await request.json()) as Partial<ReviewItem>;
-    if (!body.title || !body.content) {
-      return Response.json({ success: false, error: "Title and content required" }, { status: 400 });
-    }
+    const rating = Math.min(5, Math.max(1, Number(body.rating) || 5));
+    const title = (body.title || "").trim() || `${rating} 星评价`;
+    const content = (body.content || "").trim() || `用户给出了 ${rating} 星评分`;
+    const author = (body.author || "").trim() || "认证用户";
 
     const review: ReviewItem = {
-      id: `rev-${Date.now().toString(36)}`,
+      id: `rev-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
       app_id: id,
-      title: body.title,
-      author: body.author || "匿名用户",
-      rating: Number(body.rating) || 5,
+      title,
+      author,
+      rating,
       date: new Date().toISOString().slice(0, 10).replace(/-/g, "/"),
-      content: body.content,
+      content,
       created_at: Date.now(),
     };
 

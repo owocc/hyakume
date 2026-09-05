@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Share2,
   ExternalLink,
@@ -26,6 +26,11 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
   const [copied, setCopied] = useState(false);
   const [reviews, setReviews] = useState<ReviewItem[]>(initialReviews);
   const [showReviewModal, setShowReviewModal] = useState(false);
+  const [userRating, setUserRating] = useState<number>(5);
+  const [hoverRating, setHoverRating] = useState<number>(0);
+  const [hasRated, setHasRated] = useState<boolean>(false);
+  const [ratingSubmitting, setRatingSubmitting] = useState<boolean>(false);
+  const [ratingSuccessMessage, setRatingSuccessMessage] = useState<string>("");
   const [reviewForm, setReviewForm] = useState({
     title: "",
     author: "",
@@ -35,6 +40,66 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState<number | null>(null);
   const [failedImages, setFailedImages] = useState<Record<number, boolean>>({});
+
+  // Real rating statistics from database reviews
+  const totalRatingsCount = reviews.length;
+  const averageScore = useMemo(() => {
+    if (reviews.length === 0) return app.rating || 5.0;
+    const sum = reviews.reduce((acc, r) => acc + (r.rating || 5), 0);
+    return Number((sum / reviews.length).toFixed(1));
+  }, [reviews, app.rating]);
+
+  const starCounts = useMemo(() => {
+    const counts: Record<number, number> = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+    reviews.forEach((r) => {
+      const s = Math.min(5, Math.max(1, r.rating || 5));
+      counts[s] = (counts[s] || 0) + 1;
+    });
+    return counts;
+  }, [reviews]);
+
+  const starWidths = useMemo(() => {
+    if (reviews.length === 0) {
+      return { 5: 85, 4: 10, 3: 3, 2: 1, 1: 1 };
+    }
+    const total = reviews.length;
+    return {
+      5: Math.round((starCounts[5] / total) * 100),
+      4: Math.round((starCounts[4] / total) * 100),
+      3: Math.round((starCounts[3] / total) * 100),
+      2: Math.round((starCounts[2] / total) * 100),
+      1: Math.round((starCounts[1] / total) * 100),
+    };
+  }, [reviews.length, starCounts]);
+
+  // Quick 1-click rating submission (defaults to 5 stars)
+  const handleQuickRate = async (ratingToSubmit: number) => {
+    setUserRating(ratingToSubmit);
+    setRatingSubmitting(true);
+    try {
+      const res = await fetch(`/api/apps/${app.id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          rating: ratingToSubmit,
+          title: `${ratingToSubmit} 星评价`,
+          content: `给出了 ${ratingToSubmit} 星评分`,
+          author: "认证用户",
+        }),
+      });
+      if (res.ok) {
+        const data = (await res.json()) as { review: ReviewItem };
+        setReviews((prev) => [data.review, ...prev]);
+        setHasRated(true);
+        setRatingSuccessMessage(`感谢您的评分！您给出了 ${ratingToSubmit} 星评价。`);
+        setTimeout(() => setRatingSuccessMessage(""), 4000);
+      }
+    } catch (err) {
+      console.error("Failed to submit rating:", err);
+    } finally {
+      setRatingSubmitting(false);
+    }
+  };
 
   // Collect valid non-placeholder images and deduplicate
   const rawImages: string[] = [];
@@ -348,41 +413,110 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
             </button>
           </div>
 
-          {/* Rating Breakdown */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-8 bg-card border border-border p-6 rounded-2xl shadow-xs">
-            <div>
-              <div className="text-5xl font-extrabold text-foreground">
-                {app.rating}
+          {/* Rating Breakdown & Real Interactive Rating Box */}
+          <div className="bg-card border border-border p-6 rounded-2xl shadow-xs space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-8">
+              {/* Overall Score & Real Count */}
+              <div className="shrink-0 min-w-[130px]">
+                <div className="text-5xl font-extrabold text-foreground tracking-tight">
+                  {averageScore.toFixed(1)}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1 font-medium">
+                  满分 5 分
+                </div>
+                <div className="text-xs text-muted-foreground mt-0.5 font-medium">
+                  有 {totalRatingsCount} 个评分
+                </div>
               </div>
-              <div className="text-xs text-muted-foreground mt-1 font-medium">
-                满分 5 分
-              </div>
-              <div className="text-xs text-muted-foreground mt-0.5">
-                {app.rating_count} 个评分
+
+              {/* Star bars: w-16 fixed width for stars to completely eliminate overlap */}
+              <div className="flex-1 max-w-md space-y-1.5 w-full">
+                {[5, 4, 3, 2, 1].map((stars) => {
+                  const pct = starWidths[stars as 1 | 2 | 3 | 4 | 5];
+                  const count = starCounts[stars as 1 | 2 | 3 | 4 | 5];
+                  return (
+                    <div key={stars} className="flex items-center gap-3 text-xs">
+                      <div className="w-16 flex items-center justify-end gap-0.5 text-muted-foreground shrink-0 select-none">
+                        {Array.from({ length: stars }).map((_, i) => (
+                          <span key={i} className="text-[#FF9500] text-xs">
+                            ★
+                          </span>
+                        ))}
+                      </div>
+                      <div className="flex-1 h-2 bg-secondary/80 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-muted-foreground/60 dark:bg-muted-foreground/40 rounded-full transition-all duration-500"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                      <span className="w-8 text-right text-[11px] text-muted-foreground/70 shrink-0 font-mono">
+                        {reviews.length > 0 ? count : `${pct}%`}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
-            {/* Star bars */}
-            <div className="flex-1 max-w-md space-y-1.5">
-              {[5, 4, 3, 2, 1].map((stars) => {
-                const widths = [85, 10, 3, 1, 1];
-                return (
-                  <div key={stars} className="flex items-center gap-2 text-xs">
-                    <span className="w-8 text-right font-medium text-muted-foreground">
-                      {"★".repeat(stars)}
+            {/* Interactive Rating Component (支持评分，默认 5 分) */}
+            <div className="pt-5 border-t border-border/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-0.5">
+                <div className="text-sm font-bold text-foreground flex items-center gap-2">
+                  <span>轻点星标来评分</span>
+                  {hasRated && (
+                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-medium border border-emerald-500/20">
+                      已评分 ({userRating} 星)
                     </span>
-                    <div className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-muted-foreground rounded-full"
-                        style={{ width: `${widths[5 - stars]}%` }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {ratingSuccessMessage ||
+                    (hasRated
+                      ? "感谢您的评价！点击星标可更新评分"
+                      : "选择您的真实评分，默认 5 分好评")}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3">
+                {/* 5 Interactive Stars */}
+                <div
+                  className="flex items-center gap-1"
+                  onMouseLeave={() => setHoverRating(0)}
+                >
+                  {[1, 2, 3, 4, 5].map((s) => {
+                    const active = (hoverRating || userRating) >= s;
+                    return (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => setUserRating(s)}
+                        onMouseEnter={() => setHoverRating(s)}
+                        className="p-1 text-2xl transition-transform hover:scale-125 cursor-pointer focus:outline-none"
+                        title={`评 ${s} 分`}
+                      >
+                        <span
+                          className={
+                            active ? "text-[#FF9500]" : "text-muted-foreground/25"
+                          }
+                        >
+                          ★
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleQuickRate(userRating)}
+                  disabled={ratingSubmitting}
+                  className="px-4 py-1.5 rounded-full text-xs font-bold bg-primary text-primary-foreground hover:opacity-90 shadow-2xs transition disabled:opacity-50 cursor-pointer"
+                >
+                  {ratingSubmitting ? "提交中..." : hasRated ? "更新评分" : `提交 ${userRating} 分`}
+                </button>
+              </div>
             </div>
           </div>
-
           {/* User Review Cards (2-column layout) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {reviews.slice(0, 4).map((rev) => (
