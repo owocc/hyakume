@@ -21,7 +21,7 @@ export default async function AppDetailPage({ params }: Props) {
   const otherApps = allApps.filter((a) => a.id !== app.id);
 
   return (
-    <div className="max-w-5xl mx-auto p-6 md:p-10">
+    <div className="w-full min-h-screen">
       <AppDetailClient
         app={app}
         initialReviews={reviews}

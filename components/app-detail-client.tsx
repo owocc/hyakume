@@ -1,7 +1,18 @@
 "use client";
 
-import { useState } from "react";
-import { Share2, ExternalLink, ChevronDown, Check, UserCheck, UserX } from "lucide-react";
+import { useState, useEffect } from "react";
+import {
+  Share2,
+  ExternalLink,
+  Check,
+  UserCheck,
+  UserX,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  ImageOff,
+  Laptop,
+} from "lucide-react";
 import type { AppItem, ReviewItem } from "@/lib/types";
 
 interface Props {
@@ -22,6 +33,47 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
     content: "",
   });
   const [submitting, setSubmitting] = useState(false);
+  const [activeImageIndex, setActiveImageIndex] = useState<number | null>(null);
+  const [failedImages, setFailedImages] = useState<Record<number, boolean>>({});
+  // Collect valid non-placeholder images and deduplicate
+  const rawImages: string[] = [];
+  if (app.screenshots && Array.isArray(app.screenshots)) {
+    for (const s of app.screenshots) {
+      if (s && s.trim().length > 0 && !s.includes("photo-1551288049-bebda4e38f71")) {
+        rawImages.push(s);
+      }
+    }
+  }
+  if (
+    rawImages.length === 0 &&
+    app.cover_url &&
+    app.cover_url.trim().length > 0 &&
+    !app.cover_url.includes("photo-1551288049-bebda4e38f71")
+  ) {
+    rawImages.push(app.cover_url);
+  }
+
+  const previewImages = Array.from(new Set(rawImages));
+
+
+  useEffect(() => {
+    if (activeImageIndex === null) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setActiveImageIndex(null);
+      } else if (e.key === "ArrowLeft") {
+        setActiveImageIndex((prev) =>
+          prev !== null ? (prev - 1 + previewImages.length) % previewImages.length : null
+        );
+      } else if (e.key === "ArrowRight") {
+        setActiveImageIndex((prev) =>
+          prev !== null ? (prev + 1) % previewImages.length : null
+        );
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activeImageIndex, previewImages.length]);
 
   const handleShare = async () => {
     if (navigator.clipboard) {
@@ -56,14 +108,17 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
   };
 
   return (
-    <div className="space-y-12 pb-20">
-      {/* 1. Hero / Header Section (Image #4) */}
-      <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-[#7C4A1E] via-[#4A260E] to-[#1C130C] text-white p-8 lg:p-10 shadow-lg border border-black/10">
-        <div
-          className="absolute inset-0 bg-cover bg-center opacity-30 mix-blend-overlay"
-          style={{ backgroundImage: `url(${app.cover_url})` }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+    <div className="w-full pb-20">
+      {/* 1. Hero / Header Section - Full Bleed Edge-to-Edge with NO rounded corners */}
+      <div className="relative w-full rounded-none overflow-hidden text-white px-6 sm:px-10 lg:px-16 py-12 lg:py-16 border-b border-border/40 shadow-xs bg-neutral-900">
+        {/* Full-width blurred background image - purely blurred, no gradient overlay */}
+        {app.cover_url && (
+          <div
+            className="absolute inset-0 bg-cover bg-center scale-110 blur-3xl opacity-60 pointer-events-none"
+            style={{ backgroundImage: `url(${app.cover_url})` }}
+          />
+        )}
+        <div className="absolute inset-0 bg-black/40 backdrop-blur-2xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col md:flex-row items-start md:items-end justify-between gap-6">
           <div className="flex items-start gap-6">
@@ -135,6 +190,9 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
         </div>
       </div>
 
+      {/* Main Content Body Container */}
+      <div className="w-full px-6 sm:px-10 lg:px-16 py-8 space-y-12">
+
       {/* 2. Metadata / Key Metrics Row (Image #4) */}
       <div className="grid grid-cols-3 md:grid-cols-6 divide-y md:divide-y-0 md:divide-x divide-[#E5E5EA] border-y border-[#E5E5EA] py-4 text-center">
         {/* Metric 1: Rating */}
@@ -190,46 +248,52 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
         </div>
       </div>
 
-      {/* 3. Media Gallery (Screenshots & Showcase) (Image #4) */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between text-xs font-semibold text-[#86868B]">
-          <div className="flex items-center gap-1 cursor-pointer hover:text-[#1D1D1F]">
-            <span>iPhone、iPad 专区预览</span>
-            <ChevronDown className="w-3.5 h-3.5" />
-          </div>
-        </div>
+      {/* 3. Media Gallery (Screenshots & Showcase) */}
+      <div className="space-y-4">
+        <h2 className="text-lg font-bold text-[#1D1D1F]">预览</h2>
 
-        <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-none snap-x">
-          {/* Main 16:9 Cover Banner */}
-          <div className="snap-start shrink-0 w-[520px] h-[292px] rounded-2xl overflow-hidden border border-[#E5E5EA] shadow-sm relative group bg-black">
-            <img
-              src={app.cover_url}
-              alt="Cover Preview"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1200";
-              }}
-              className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex items-end p-4">
-              <span className="text-xs font-semibold text-white/90 bg-black/40 backdrop-blur px-2.5 py-1 rounded-md">
-                16:9 高清预览
-              </span>
+        {previewImages.length === 0 ? (
+          <div className="text-xs text-[#86868B] py-8 text-center bg-[#F5F5F7] rounded-none border border-[#E5E5EA]">
+            暂无预览图片
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-none snap-x">
+              {previewImages.map((img, i) => (
+                <div
+                  key={i}
+                  onClick={() => {
+                    if (!failedImages[i]) {
+                      setActiveImageIndex(i);
+                    }
+                  }}
+                  className="snap-start shrink-0 rounded-none overflow-hidden border border-[#D1D1D6] shadow-2xs bg-neutral-50 group relative cursor-zoom-in hover:border-black/50 transition-colors"
+                  title="点击查看大图"
+                >
+                  {failedImages[i] ? (
+                    <div className="h-[260px] sm:h-[320px] w-[460px] max-w-[85vw] bg-neutral-100 flex flex-col items-center justify-center text-neutral-400 gap-2 select-none border border-[#D1D1D6]">
+                      <ImageOff className="w-8 h-8 stroke-[1.5]" />
+                      <span className="text-xs font-medium">预览图加载失败</span>
+                    </div>
+                  ) : (
+                    <img
+                      src={img}
+                      alt={`预览图片 ${i + 1}`}
+                      onError={() => {
+                        setFailedImages((prev) => ({ ...prev, [i]: true }));
+                      }}
+                      className="h-[260px] sm:h-[320px] w-auto max-w-[620px] object-cover rounded-none transition duration-300 group-hover:scale-[1.01]"
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center gap-1.5 text-xs text-[#86868B] pt-1">
+              <Laptop className="w-3.5 h-3.5" />
+              <span>Web 桌面端预览</span>
             </div>
           </div>
-          {/* Screenshot Cards */}
-          {(app.screenshots || []).map((img, i) => (
-            <div
-              key={i}
-              className="snap-start shrink-0 w-[180px] h-[292px] rounded-2xl overflow-hidden border border-[#E5E5EA] shadow-sm bg-gray-100 group relative"
-            >
-              <img
-                src={img}
-                alt={`Screenshot ${i + 1}`}
-                className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-              />
-            </div>
-          ))}
-        </div>
+        )}
       </div>
 
       {/* 4. Description Section (Image #3 & #4) */}
@@ -254,36 +318,6 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
         </div>
       </div>
 
-      {/* 5. Events Section (活动) (Image #3) */}
-      {app.events && app.events.length > 0 && (
-        <div className="space-y-4 border-t border-[#E5E5EA] pt-6">
-          <div className="flex items-center gap-2">
-            <h2 className="text-lg font-bold text-[#1D1D1F]">活动</h2>
-            <span className="text-xs font-bold text-black">
-              {app.events[0].badge || "现已推出"}
-            </span>
-          </div>
-
-          <div className="relative h-64 rounded-2xl overflow-hidden border border-[#E5E5EA] shadow-sm group">
-            <img
-              src={app.events[0].image || app.cover_url}
-              alt="Event Key Art"
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent flex flex-col justify-end p-6 text-white space-y-1">
-              <span className="text-xs font-bold text-orange-400 uppercase tracking-wider">
-                {app.events[0].tag || "重磅更新"}
-              </span>
-              <h3 className="text-lg font-bold leading-snug">
-                {app.events[0].title}
-              </h3>
-              <p className="text-xs text-white/80 line-clamp-2 max-w-2xl">
-                {app.events[0].desc}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* 6. Ratings & Reviews (评分及评论) (Image #3) */}
       <div className="space-y-6 border-t border-[#E5E5EA] pt-6">
@@ -459,23 +493,6 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
         </div>
       )}
 
-      {/* 7. What's New (新功能) (Image #2) */}
-      <div className="space-y-3 border-t border-[#E5E5EA] pt-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <h2 className="text-lg font-bold text-[#1D1D1F]">新功能</h2>
-            <span className="text-sm text-[#86868B] font-normal">&gt;</span>
-          </div>
-          <div className="text-right text-xs text-[#86868B] space-x-2">
-            <span>版本 {app.version}</span>
-            <span>•</span>
-            <span>{app.version_date}</span>
-          </div>
-        </div>
-        <p className="text-xs text-[#1D1D1F] leading-relaxed whitespace-pre-line">
-          {app.release_notes}
-        </p>
-      </div>
 
       {/* 8. App Privacy (App 隐私) (Image #2) */}
       <div className="space-y-4 border-t border-[#E5E5EA] pt-6">
@@ -555,16 +572,6 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
         </p>
       </div>
 
-      {/* 9. Accessibility (辅助功能) (Image #2) */}
-      <div className="space-y-2 border-t border-[#E5E5EA] pt-6">
-        <h2 className="text-lg font-bold text-[#1D1D1F]">辅助功能</h2>
-        <p className="text-xs text-[#86868B]">
-          开发者尚未表明此 App 支持哪些辅助功能。
-          <a href="#" className="text-black hover:underline ml-1">
-            进一步了解
-          </a>
-        </p>
-      </div>
 
       {/* 10. Information Grid (信息) (Image #5) */}
       <div className="space-y-4 border-t border-[#E5E5EA] pt-6">
@@ -699,6 +706,76 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
           </div>
         </div>
       )}
+      </div>
+
+    {/* Lightbox / Large Image Viewer Modal */}
+    {activeImageIndex !== null && previewImages[activeImageIndex] && (
+      <div
+        className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 sm:p-8 select-none"
+        onClick={() => setActiveImageIndex(null)}
+      >
+        {/* Top Bar Controls */}
+        <div className="absolute top-4 right-4 sm:top-6 sm:right-6 flex items-center gap-3 z-50">
+          <span className="text-white/70 text-xs font-mono">
+            {activeImageIndex + 1} / {previewImages.length}
+          </span>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setActiveImageIndex(null);
+            }}
+            className="w-10 h-10 rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center transition cursor-pointer"
+            aria-label="关闭大图"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Prev button */}
+        {previewImages.length > 1 && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setActiveImageIndex((prev) =>
+                prev !== null ? (prev - 1 + previewImages.length) % previewImages.length : null
+              );
+            }}
+            className="absolute left-4 sm:left-6 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center transition cursor-pointer z-50"
+            aria-label="上一张"
+          >
+            <ChevronLeft className="w-6 h-6" />
+          </button>
+        )}
+
+        {/* Big Image Content */}
+        <div
+          className="relative max-h-[88vh] max-w-[92vw] flex items-center justify-center"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <img
+            src={previewImages[activeImageIndex]}
+            alt={`大图预览 ${activeImageIndex + 1}`}
+            className="max-h-[88vh] max-w-[92vw] w-auto h-auto object-contain shadow-2xl rounded-none border border-white/10"
+          />
+        </div>
+
+        {/* Next button */}
+        {previewImages.length > 1 && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setActiveImageIndex((prev) =>
+                prev !== null ? (prev + 1) % previewImages.length : null
+              );
+            }}
+            className="absolute right-4 sm:right-6 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center transition cursor-pointer z-50"
+            aria-label="下一张"
+          >
+            <ChevronRight className="w-6 h-6" />
+          </button>
+        )}
+      </div>
+    )}
     </div>
   );
 }

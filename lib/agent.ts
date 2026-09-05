@@ -309,6 +309,7 @@ export async function summarizeWithAgent(crawl: CrawlResult): Promise<AppItem> {
     developer_id: developerName,
     icon_url: crawl.iconUrl,
     cover_url: crawl.coverUrl,
+    primary_color: crawl.primaryColor,
     seo_image: crawl.seoImage,
     screenshots: crawl.screenshots,
     preview_features: previewFeatures,

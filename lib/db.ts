@@ -1,8 +1,16 @@
-import type { AppItem, ReviewItem } from "./types";
+import type { AppItem, ReviewItem, CategoryItem } from "./types";
 import type { D1Database } from "@cloudflare/workers-types";
 import { getCloudflareEnv } from "./cf-env";
 import fs from "node:fs";
 import path from "node:path";
+
+export const DEFAULT_CATEGORIES: CategoryItem[] = [
+  { id: "apps", name: "App", icon: "AppWindow", sort_order: 1 },
+  { id: "games", name: "游戏", icon: "Gamepad2", sort_order: 2 },
+  { id: "web", name: "WEB", icon: "Globe", sort_order: 3 },
+  { id: "tools", name: "工具", icon: "Wrench", sort_order: 4 },
+  { id: "ai", name: "AI", icon: "Sparkles", sort_order: 5 },
+];
 
 export const FIXED_CATEGORIES: string[] = ["工具", "WEB", "AI"];
 
@@ -77,6 +85,7 @@ function initSqliteTables(db: SqliteDatabase): void {
       developer_id TEXT,
       icon_url TEXT NOT NULL,
       cover_url TEXT NOT NULL,
+      primary_color TEXT,
       seo_image TEXT,
       screenshots TEXT,
       preview_features TEXT,
@@ -112,12 +121,35 @@ function initSqliteTables(db: SqliteDatabase): void {
       content TEXT NOT NULL,
       created_at INTEGER NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS categories (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL UNIQUE,
+      icon TEXT,
+      sort_order INTEGER DEFAULT 0,
+      created_at INTEGER NOT NULL
+    );
   `);
 
   try {
     db.exec("ALTER TABLE apps ADD COLUMN categories TEXT;");
   } catch {
     // column already exists
+  }
+  try {
+    db.exec("ALTER TABLE apps ADD COLUMN primary_color TEXT;");
+  } catch {
+    // column already exists
+  }
+  try {
+    for (const cat of DEFAULT_CATEGORIES) {
+      db.prepare(
+        `INSERT OR IGNORE INTO categories (id, name, icon, sort_order, created_at)
+         VALUES (?, ?, ?, ?, ?)`
+      ).run(cat.id, cat.name, cat.icon || "", cat.sort_order || 0, Date.now());
+    }
+  } catch {
+    // ignore
   }
   try {
     const rows = db.prepare("SELECT id, url FROM apps").all() as Array<{ id: string; url: string }>;
@@ -158,6 +190,7 @@ async function ensureD1Initialized(db: D1Database): Promise<void> {
           screenshots TEXT,
           preview_features TEXT,
           description TEXT NOT NULL,
+          primary_color TEXT,
           rating REAL DEFAULT 4.5,
           rating_count TEXT DEFAULT '1000+',
           ranking TEXT,
@@ -196,8 +229,34 @@ async function ensureD1Initialized(db: D1Database): Promise<void> {
       )
       .run();
 
+    await db
+      .prepare(
+        `CREATE TABLE IF NOT EXISTS categories (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL UNIQUE,
+          icon TEXT,
+          sort_order INTEGER DEFAULT 0,
+          created_at INTEGER NOT NULL
+        )`
+      )
+      .run();
+
+    for (const cat of DEFAULT_CATEGORIES) {
+      await db
+        .prepare(
+          `INSERT OR IGNORE INTO categories (id, name, icon, sort_order, created_at)
+           VALUES (?, ?, ?, ?, ?)`
+        )
+        .bind(cat.id, cat.name, cat.icon || "", cat.sort_order || 0, Date.now())
+        .run();
+    }
     try {
       await db.prepare("ALTER TABLE apps ADD COLUMN categories TEXT").run();
+    } catch {
+      // column already exists
+    }
+    try {
+      await db.prepare("ALTER TABLE apps ADD COLUMN primary_color TEXT").run();
     } catch {
       // column already exists
     }
@@ -263,6 +322,7 @@ function rowToApp(row: Record<string, unknown>): AppItem {
     rating_count: String(row.rating_count || "1000+"),
     ranking: row.ranking ? String(row.ranking) : undefined,
     age_rating: String(row.age_rating || "12+"),
+    primary_color: row.primary_color ? String(row.primary_color) : undefined,
     price: String(row.price || "免费 · Web App"),
     size: String(row.size || "Web App"),
     compatibility: String(row.compatibility || "现代浏览器"),
@@ -287,14 +347,61 @@ function rowToApp(row: Record<string, unknown>): AppItem {
   };
 }
 
-/**
- * Fixed categories: Only 工具, WEB, AI
- */
-export async function getCategories(): Promise<Array<{ id: string; name: string }>> {
-  return FIXED_CATEGORIES.map((cat: string) => ({
-    id: cat,
-    name: cat,
-  }));
+export function getCategoryTerms(cat: string): string[] {
+  const clean = (cat || "").trim().toLowerCase();
+  if (clean === "web") return ["WEB", "web"];
+  if (clean === "games" || clean === "游戏") return ["游戏", "games"];
+  if (clean === "tools" || clean === "工具") return ["工具", "tools"];
+  if (clean === "ai") return ["AI", "ai"];
+  if (clean === "apps" || clean === "app") return ["App", "apps"];
+  return [cat];
+}
+
+export async function getCategories(): Promise<CategoryItem[]> {
+  const env = await getCloudflareEnv();
+  if (env && env.DB) {
+    await ensureD1Initialized(env.DB);
+    try {
+      const res = await env.DB.prepare(
+        "SELECT * FROM categories ORDER BY sort_order ASC, created_at ASC"
+      ).all<CategoryItem>();
+      if (res.results && res.results.length > 0) return res.results;
+    } catch {
+      // fallback
+    }
+  }
+
+  try {
+    const db = getLocalDatabase();
+    const rows = db
+      .prepare("SELECT * FROM categories ORDER BY sort_order ASC, created_at ASC")
+      .all() as unknown as CategoryItem[];
+    if (rows && rows.length > 0) return rows;
+  } catch {
+    // fallback
+  }
+
+  return DEFAULT_CATEGORIES;
+}
+
+export async function getCategoryById(idOrName: string): Promise<CategoryItem | null> {
+  const clean = decodeURIComponent(idOrName || "").trim().toLowerCase();
+  if (!clean) return null;
+
+  const categories = await getCategories();
+  const found = categories.find(
+    (c) =>
+      c.id.toLowerCase() === clean ||
+      c.name.toLowerCase() === clean ||
+      (clean === "all" && (c.id === "apps" || c.name === "App"))
+  );
+  if (found) return found;
+
+  return (
+    DEFAULT_CATEGORIES.find(
+      (c) => c.id.toLowerCase() === clean || c.name.toLowerCase() === clean
+    ) || null
+  );
 }
 
 export async function getAllApps(options?: {
@@ -316,8 +423,12 @@ export async function getAllApps(options?: {
       options.category !== "all" &&
       options.category !== "全部"
     ) {
-      query += " AND (category = ? OR categories LIKE ?)";
-      params.push(options.category, `%"${options.category}"%`);
+      const terms = getCategoryTerms(options.category);
+      const conditions = terms.map(() => "(category = ? OR categories LIKE ?)").join(" OR ");
+      query += ` AND (${conditions})`;
+      for (const t of terms) {
+        params.push(t, `%"${t}"%`);
+      }
     }
     if (options?.featured !== undefined) {
       query += " AND featured = ?";
@@ -348,9 +459,13 @@ export async function getAllApps(options?: {
     options.category !== "all" &&
     options.category !== "全部"
   ) {
-    query += " AND (category = ? OR categories LIKE ?)";
-    params.push(options.category, `%"${options.category}"%`);
-  }
+    const terms = getCategoryTerms(options.category);
+    const conditions = terms.map(() => "(category = ? OR categories LIKE ?)").join(" OR ");
+    query += ` AND (${conditions})`;
+    for (const t of terms) {
+      params.push(t, `%"${t}"%`);
+    }
+    }
   if (options?.featured !== undefined) {
     query += " AND featured = ?";
     params.push(options.featured ? 1 : 0);
@@ -522,6 +637,7 @@ export async function insertApp(app: AppItem): Promise<AppItem> {
     app.developer_id || "",
     app.icon_url,
     app.cover_url,
+    app.primary_color || "",
     app.seo_image || "",
     JSON.stringify(app.screenshots || []),
     JSON.stringify(app.preview_features || []),
@@ -552,18 +668,17 @@ export async function insertApp(app: AppItem): Promise<AppItem> {
     await env.DB.prepare(`
       INSERT OR REPLACE INTO apps (
         id, name, tagline, url, category, categories, developer, developer_id,
-        icon_url, cover_url, seo_image, screenshots, preview_features,
+        icon_url, cover_url, primary_color, seo_image, screenshots, preview_features,
         description, rating, rating_count, ranking, age_rating,
         price, size, compatibility, languages, version, version_date,
         release_notes, privacy_linked, privacy_not_linked, events, related_topics,
         featured, trending, created_at, updated_at
       ) VALUES (
         ?, ?, ?, ?, ?, ?, ?, ?,
-        ?, ?, ?, ?, ?,
-        ?, ?, ?, ?, ?,
-        ?, ?, ?, ?, ?, ?,
-        ?, ?, ?, ?, ?,
-        ?, ?, ?, ?
+        ?, ?, ?, ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?, ?, ?, ?,
+        ?, ?
       )
     `).bind(...values).run();
     return app;
@@ -573,18 +688,17 @@ export async function insertApp(app: AppItem): Promise<AppItem> {
   db.prepare(`
     INSERT OR REPLACE INTO apps (
       id, name, tagline, url, category, categories, developer, developer_id,
-      icon_url, cover_url, seo_image, screenshots, preview_features,
+      icon_url, cover_url, primary_color, seo_image, screenshots, preview_features,
       description, rating, rating_count, ranking, age_rating,
       price, size, compatibility, languages, version, version_date,
       release_notes, privacy_linked, privacy_not_linked, events, related_topics,
       featured, trending, created_at, updated_at
     ) VALUES (
       ?, ?, ?, ?, ?, ?, ?, ?,
-      ?, ?, ?, ?, ?,
-      ?, ?, ?, ?, ?,
-      ?, ?, ?, ?, ?, ?,
-      ?, ?, ?, ?, ?,
-      ?, ?, ?, ?
+      ?, ?, ?, ?, ?, ?, ?, ?,
+      ?, ?, ?, ?, ?, ?, ?, ?,
+      ?, ?, ?, ?, ?, ?, ?, ?,
+      ?, ?
     )
   `).run(...values);
 

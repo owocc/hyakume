@@ -9,6 +9,7 @@ export interface AppItem {
   developer_id?: string;
   icon_url: string;
   cover_url: string;
+  primary_color?: string;
   seo_image?: string;
   screenshots: string[];
   preview_features: string[];
@@ -55,6 +56,14 @@ export interface ReviewItem {
   content: string;
   created_at: number;
 }
+export interface CategoryItem {
+  id: string;
+  name: string;
+  icon?: string;
+  sort_order?: number;
+  created_at?: number;
+}
+
 
 export interface AnalyzeResult {
   name: string;
@@ -66,6 +75,7 @@ export interface AnalyzeResult {
   icon_url: string;
   cover_url: string;
   seo_image?: string;
+  primary_color?: string;
   screenshots: string[];
   preview_features: string[];
   description: string;

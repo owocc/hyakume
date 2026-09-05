@@ -9,6 +9,7 @@ export interface CrawlResult {
   seoImage?: string;
   iconUrl: string;
   coverUrl: string;
+  primaryColor?: string;
   screenshots: string[];
   screenshotBuffer?: Uint8Array;
   usedSeoImage: boolean;
@@ -109,6 +110,12 @@ function parseHtmlMetadata(html: string, baseUrl: string) {
       seoImage = rawSeo;
     }
   }
+  // Extract theme-color / primary color
+  let primaryColor: string | undefined;
+  const themeMatch = html.match(/<meta[^>]+name=["'](?:theme-color|msapplication-TileColor)["'][^>]+content=["']([^"']+)["']/i);
+  if (themeMatch && themeMatch[1]) {
+    primaryColor = themeMatch[1].trim();
+  }
 
   // Extract favicon
   let iconUrl = `https://www.google.com/s2/favicons?domain=${parsedUrl.hostname}&sz=128`;
@@ -134,7 +141,7 @@ function parseHtmlMetadata(html: string, baseUrl: string) {
 
   const text = cleanHtml.slice(0, 3000);
 
-  return { title, description, seoImage, iconUrl, text };
+  return { title, description, seoImage, iconUrl, text, primaryColor };
 }
 
 /**
@@ -154,6 +161,7 @@ export async function crawlWebsite(targetUrl: string): Promise<CrawlResult> {
   let seoImage = "";
   let iconUrl = `https://www.google.com/s2/favicons?domain=${parsedUrl.hostname}&sz=128`;
   let screenshotBuffer: Uint8Array | undefined;
+  let primaryColor: string | undefined;
 
   // 1. Try Cloudflare Browser Rendering if MYBROWSER binding is present (with 15s timeout)
   if (env && env.MYBROWSER) {
@@ -182,7 +190,26 @@ export async function crawlWebsite(targetUrl: string): Promise<CrawlResult> {
           const icon = iconEl?.getAttribute("href") || "";
 
           const bodyText = document.body.innerText || "";
-          return { ogTitle, ogDesc, ogImg, icon, bodyText: bodyText.slice(0, 3000) };
+          const themeColor =
+            document.querySelector('meta[name="theme-color"]')?.getAttribute("content") ||
+            document.querySelector('meta[name="msapplication-TileColor"]')?.getAttribute("content") ||
+            "";
+
+          let detectedColor = themeColor;
+          if (!detectedColor) {
+            try {
+              const header = document.querySelector('header, nav, [role="banner"]');
+              const headerBg = header ? window.getComputedStyle(header).backgroundColor : "";
+              const bodyBg = window.getComputedStyle(document.body).backgroundColor;
+              const isValid = (c: string) => c && c !== "rgba(0, 0, 0, 0)" && c !== "transparent" && c !== "rgb(255, 255, 255)";
+              if (isValid(headerBg)) detectedColor = headerBg;
+              else if (isValid(bodyBg)) detectedColor = bodyBg;
+            } catch {
+              // ignore
+            }
+          }
+
+          return { ogTitle, ogDesc, ogImg, icon, bodyText: bodyText.slice(0, 3000), detectedColor };
         });
 
         const rawScreenshot = await page.screenshot({ type: "png" });
@@ -202,6 +229,9 @@ export async function crawlWebsite(targetUrl: string): Promise<CrawlResult> {
       title = metadata.ogTitle || parsedUrl.hostname;
       description = metadata.ogDesc;
       text = metadata.bodyText;
+      if (metadata.detectedColor) {
+        primaryColor = metadata.detectedColor;
+      }
       if (metadata.ogImg) {
         try {
           seoImage = new URL(metadata.ogImg, url).toString();
@@ -244,6 +274,9 @@ export async function crawlWebsite(targetUrl: string): Promise<CrawlResult> {
         text = parsed.text;
         seoImage = parsed.seoImage;
         iconUrl = parsed.iconUrl;
+        if (parsed.primaryColor) {
+          primaryColor = parsed.primaryColor;
+        }
       }
     } catch (fetchErr) {
       console.error("Failed to fetch webpage HTML:", fetchErr);
@@ -269,6 +302,7 @@ export async function crawlWebsite(targetUrl: string): Promise<CrawlResult> {
     // No SEO image provided: use 16:9 screenshot and upload to Cloudflare R2
     if (!screenshotBuffer) {
       screenshotBuffer = generateFallback169Card(title, parsedUrl.hostname);
+      if (!primaryColor) primaryColor = "#3b82f6";
     }
 
     const fileSlug = parsedUrl.hostname.replace(/[^a-zA-Z0-9]/g, "-");
@@ -280,11 +314,9 @@ export async function crawlWebsite(targetUrl: string): Promise<CrawlResult> {
   }
 
   // Generate screenshot previews for the app details & search preview cards
-  const screenshots = [
-    coverUrl,
-    seoImage || coverUrl,
-    `https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&auto=format&fit=crop&q=80`,
-  ];
+  const screenshots: string[] = [];
+  if (coverUrl) screenshots.push(coverUrl);
+  if (seoImage && seoImage !== coverUrl) screenshots.push(seoImage);
 
   return {
     url,
@@ -294,6 +326,7 @@ export async function crawlWebsite(targetUrl: string): Promise<CrawlResult> {
     seoImage: seoImage || undefined,
     iconUrl,
     coverUrl,
+    primaryColor,
     screenshots,
     screenshotBuffer,
     usedSeoImage,

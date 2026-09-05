@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS apps (
   developer_id TEXT,
   icon_url TEXT NOT NULL,
   cover_url TEXT NOT NULL,
+  primary_color TEXT,
   seo_image TEXT,
   screenshots TEXT,             -- JSON array of screenshot URLs
   preview_features TEXT,        -- JSON array of titles for the 3 search preview cards

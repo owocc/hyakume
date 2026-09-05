@@ -7,12 +7,24 @@ import { Footer } from "@/components/footer";
 export const dynamic = "force-dynamic";
 
 export default async function AppsPage() {
-  const allApps = await getAllApps();
+  const [allApps, webApps, toolApps, aiApps] = await Promise.all([
+    getAllApps(),
+    getAllApps({ category: "web" }),
+    getAllApps({ category: "tools" }),
+    getAllApps({ category: "ai" }),
+  ]);
 
   const featuredApps = allApps.filter((a: AppItem) => a.featured);
-  const trendingApps = allApps.filter((a: AppItem) => a.trending);
   const heroApp = featuredApps[0] || allApps[0];
-  const listApps = trendingApps.length > 0 ? trendingApps.slice(0, 6) : allApps.slice(0, 6);
+  const secondHeroApp = featuredApps[1] || allApps[1] || heroApp;
+  const thirdHeroApp = featuredApps[2] || allApps[2] || heroApp;
+
+  // List 1: First list displays Web category (per prompt requirement)
+  const webListApps = webApps.length > 0 ? webApps.slice(0, 5) : allApps.slice(0, 5);
+  // List 2: Tools category
+  const toolListApps = toolApps.length > 0 ? toolApps.slice(0, 5) : allApps.slice(2, 7);
+  // List 3: AI category
+  const aiListApps = aiApps.length > 0 ? aiApps.slice(0, 5) : allApps.slice(4, 9);
 
   // Date format: e.g. "9月6日 星期日"
   const now = new Date();
@@ -24,7 +36,7 @@ export default async function AppsPage() {
 
   return (
     <div className="flex flex-col min-h-screen justify-between">
-      <div className="p-8 max-w-7xl mx-auto space-y-10 w-full flex-1">
+      <div className="p-8 w-full space-y-12 flex-1">
         {/* Apps Header */}
         <div className="border-b border-border pb-4">
           <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
@@ -60,24 +72,21 @@ export default async function AppsPage() {
             </div>
           </div>
         ) : (
-          <>
-            {/* Top Grid: Hero Feature Card + Trending Apps Card */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              {/* Left: Hero Feature Card */}
+          <div className="space-y-12">
+            {/* Row 1: Left Wide (Hero Banner), Right Narrow (Web 分类列表) */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+              {/* Left Wide: Hero Feature Card (7 cols) */}
               {heroApp && (
                 <div className="lg:col-span-7 flex flex-col">
                   <Link
                     href={`/app/${heroApp.id}`}
-                    className="group relative flex-1 min-h-[440px] rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-border flex flex-col justify-between p-7 bg-gradient-to-br from-[#FF2D55]/90 via-[#AF52DE]/90 to-[#5856D6] text-white"
+                    className="group relative flex-1 min-h-[460px] rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-border flex flex-col justify-between p-7 pb-24 text-white bg-neutral-900"
                   >
-                    {/* Background Cover Overlay */}
                     <div
-                      className="absolute inset-0 bg-cover bg-center opacity-35 mix-blend-overlay group-hover:scale-105 transition-transform duration-700"
+                      className="absolute inset-0 bg-cover bg-center group-hover:scale-105 transition-transform duration-700"
                       style={{ backgroundImage: `url(${heroApp.cover_url})` }}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
-                    {/* Card Top Text */}
                     <div className="relative z-10 space-y-1">
                       <span className="text-xs font-bold uppercase tracking-wider text-white/80">
                         时下热门 • 精选主打
@@ -87,56 +96,53 @@ export default async function AppsPage() {
                       </h2>
                     </div>
 
-                    {/* Card Bottom: App Icons Strip & Quick Look */}
-                    <div className="relative z-10 mt-auto pt-6">
-                      <div className="flex items-center justify-between bg-white/15 backdrop-blur-md p-3 rounded-2xl border border-white/20">
-                        <div className="flex items-center gap-3">
-                          <img
-                            src={heroApp.icon_url}
-                            alt={heroApp.name}
-                            className="w-12 h-12 rounded-xl object-cover shadow-md"
-                          />
-                          <div>
-                            <h3 className="font-bold text-sm leading-tight text-white">
-                              {heroApp.name}
-                            </h3>
-                            <p className="text-xs text-white/80 line-clamp-1">
-                              {heroApp.category} • {heroApp.rating}★ ({heroApp.rating_count})
-                            </p>
-                          </div>
+                    {/* Bottom Info Bar: Flush at bottom, full card width with blur, no rounded corners, no top border */}
+                    <div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-black/35 backdrop-blur-xl px-6 py-4">
+                      <div className="flex items-center gap-3.5 min-w-0">
+                        <img
+                          src={heroApp.icon_url}
+                          alt={heroApp.name}
+                          className="w-12 h-12 rounded-xl object-cover shadow-sm shrink-0"
+                        />
+                        <div className="min-w-0">
+                          <h3 className="font-bold text-sm leading-tight text-white truncate">
+                            {heroApp.name}
+                          </h3>
+                          <p className="text-xs text-white/80 truncate mt-0.5">
+                            {heroApp.category} • {heroApp.rating}★ ({heroApp.rating_count})
+                          </p>
                         </div>
-                        <span className="px-4 py-1.5 rounded-full bg-white text-black font-bold text-xs shadow hover:bg-white/90 transition">
-                          查看
-                        </span>
                       </div>
+                      <span className="px-4 py-1.5 rounded-full bg-white text-black font-bold text-xs shadow-sm hover:bg-white/90 transition shrink-0 ml-3">
+                        查看
+                      </span>
                     </div>
                   </Link>
                 </div>
               )}
 
-              {/* Right: Trending Games / Apps List */}
+              {/* Right Narrow: Web 分类列表 (5 cols) */}
               <div className="lg:col-span-5 bg-surface rounded-3xl p-6 border border-border flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between mb-4">
                     <div>
                       <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                        时下热门
+                        WEB 分类
                       </span>
                       <h2 className="text-xl font-bold text-foreground tracking-tight">
-                        好游戏 畅快玩
+                        精选 Web 应用
                       </h2>
                     </div>
                     <Link
-                      href="/category/游戏"
+                      href="/web"
                       className="text-xs font-semibold text-black hover:underline flex items-center gap-0.5"
                     >
                       查看全部 <ChevronRight className="w-3.5 h-3.5" />
                     </Link>
                   </div>
 
-                  {/* List items */}
                   <div className="divide-y divide-border">
-                    {listApps.map((app: AppItem, index: number) => (
+                    {webListApps.map((app: AppItem, index: number) => (
                       <div
                         key={app.id}
                         className="py-3 first:pt-0 last:pb-0 flex items-center justify-between gap-3 group"
@@ -148,7 +154,7 @@ export default async function AppsPage() {
                           <img
                             src={app.icon_url}
                             alt={app.name}
-                            className="w-11 h-11 rounded-xl object-cover shadow-sm group-hover:scale-105 transition-transform"
+                            className="w-11 h-11 rounded-xl object-cover shadow-sm group-hover:scale-105 transition-transform shrink-0"
                           />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1.5">
@@ -156,13 +162,13 @@ export default async function AppsPage() {
                                 {app.name}
                               </span>
                               {index === 0 && (
-                                <span className="text-[10px] px-1 py-0.5 bg-[#FF9500]/15 text-[#FF9500] font-bold rounded">
-                                  灵宠降世
+                                <span className="text-[10px] px-1.5 py-0.5 bg-[#FF9500]/15 text-[#FF9500] font-bold rounded">
+                                  热门收录
                                 </span>
                               )}
                               {index === 1 && (
-                                <span className="text-[10px] px-1 py-0.5 bg-[#34C759]/15 text-[#34C759] font-bold rounded">
-                                  重磅更新
+                                <span className="text-[10px] px-1.5 py-0.5 bg-[#34C759]/15 text-[#34C759] font-bold rounded">
+                                  极速体验
                                 </span>
                               )}
                             </div>
@@ -184,55 +190,241 @@ export default async function AppsPage() {
               </div>
             </div>
 
-            {/* Bottom Section: 今日活动进行时 */}
-            <div className="space-y-4 pt-4">
-              <div>
-                <h2 className="text-2xl font-bold text-foreground tracking-tight">
-                  今日活动进行时
-                </h2>
-                <p className="text-sm text-muted-foreground">
-                  新鲜节目、电影、游戏和更多精彩
-                </p>
+            {/* Row 2: Reversed! Left Narrow (工具 分类列表), Right Wide (主打推荐大卡片) */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+              {/* Left Narrow: 工具 分类列表 (5 cols) */}
+              <div className="lg:col-span-5 bg-surface rounded-3xl p-6 border border-border flex flex-col justify-between order-2 lg:order-1">
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                        工具 分类
+                      </span>
+                      <h2 className="text-xl font-bold text-foreground tracking-tight">
+                        效率必备利器
+                      </h2>
+                    </div>
+                    <Link
+                      href="/category/tools"
+                      className="text-xs font-semibold text-black hover:underline flex items-center gap-0.5"
+                    >
+                      查看全部 <ChevronRight className="w-3.5 h-3.5" />
+                    </Link>
+                  </div>
+
+                  <div className="divide-y divide-border">
+                    {toolListApps.map((app: AppItem, index: number) => (
+                      <div
+                        key={app.id}
+                        className="py-3 first:pt-0 last:pb-0 flex items-center justify-between gap-3 group"
+                      >
+                        <Link
+                          href={`/app/${app.id}`}
+                          className="flex items-center gap-3 flex-1 min-w-0"
+                        >
+                          <img
+                            src={app.icon_url}
+                            alt={app.name}
+                            className="w-11 h-11 rounded-xl object-cover shadow-sm group-hover:scale-105 transition-transform shrink-0"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-semibold text-sm text-foreground truncate group-hover:text-black transition-colors">
+                                {app.name}
+                              </span>
+                              {index === 0 && (
+                                <span className="text-[10px] px-1.5 py-0.5 bg-[#007AFF]/15 text-[#007AFF] font-bold rounded">
+                                  工作流核心
+                                </span>
+                              )}
+                              {index === 1 && (
+                                <span className="text-[10px] px-1.5 py-0.5 bg-[#AF52DE]/15 text-[#AF52DE] font-bold rounded">
+                                  深度好评
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground truncate mt-0.5">
+                              {app.tagline || app.description.slice(0, 30)}
+                            </p>
+                          </div>
+                        </Link>
+                        <Link
+                          href={`/app/${app.id}`}
+                          className="px-3.5 py-1 rounded-full bg-surface-active hover:bg-black hover:text-white text-black text-xs font-bold transition-all shrink-0"
+                        >
+                          查看
+                        </Link>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {allApps.slice(0, 2).map((app: AppItem, index: number) => (
+              {/* Right Wide: Featured Spotlight Card (7 cols) */}
+              {secondHeroApp && (
+                <div className="lg:col-span-7 flex flex-col order-1 lg:order-2">
                   <Link
-                    key={app.id}
-                    href={`/app/${app.id}`}
-                    className="group relative h-80 rounded-3xl overflow-hidden border border-border shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col justify-end p-6"
+                    href={`/app/${secondHeroApp.id}`}
+                    className="group relative flex-1 min-h-[460px] rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-border flex flex-col justify-between p-7 pb-24 text-white bg-neutral-900"
                   >
                     <div
                       className="absolute inset-0 bg-cover bg-center group-hover:scale-105 transition-transform duration-700"
-                      style={{
-                        backgroundImage: `url(${app.cover_url})`,
-                      }}
+                      style={{ backgroundImage: `url(${secondHeroApp.cover_url})` }}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent" />
 
-                    <div className="relative z-10 space-y-2">
-                      <span
-                        className={`inline-block px-2.5 py-0.5 rounded-full text-white text-xs font-bold tracking-wide ${
-                          index === 0 ? "bg-[#FF9500]" : "bg-[#AF52DE]"
-                        }`}
-                      >
-                        {index === 0 ? "进行中" : "现已推出"}
+                    <div className="relative z-10 space-y-1">
+                      <span className="text-xs font-bold uppercase tracking-wider text-white/80">
+                        主打推荐 • 生产力飞跃
                       </span>
-                      <p className="text-xs font-bold text-white/80 uppercase tracking-wider">
-                        官方收录 • Web App
-                      </p>
-                      <h3 className="text-xl font-extrabold text-white leading-tight">
-                        {app.name}：{app.tagline}
-                      </h3>
-                      <p className="text-xs text-white/80 line-clamp-2">
-                        {app.description.slice(0, 100)}
-                      </p>
+                      <h2 className="text-2xl lg:text-3xl font-extrabold leading-snug tracking-tight max-w-md">
+                        {secondHeroApp.name}：{secondHeroApp.tagline}
+                      </h2>
+                    </div>
+
+                    {/* Bottom Info Bar: Flush at bottom, full card width with blur, no rounded corners, no top border */}
+                    <div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-black/35 backdrop-blur-xl px-6 py-4">
+                      <div className="flex items-center gap-3.5 min-w-0">
+                        <img
+                          src={secondHeroApp.icon_url}
+                          alt={secondHeroApp.name}
+                          className="w-12 h-12 rounded-xl object-cover shadow-sm shrink-0"
+                        />
+                        <div className="min-w-0">
+                          <h3 className="font-bold text-sm leading-tight text-white truncate">
+                            {secondHeroApp.name}
+                          </h3>
+                          <p className="text-xs text-white/80 truncate mt-0.5">
+                            {secondHeroApp.category} • {secondHeroApp.rating}★ ({secondHeroApp.rating_count})
+                          </p>
+                        </div>
+                      </div>
+                      <span className="px-4 py-1.5 rounded-full bg-white text-black font-bold text-xs shadow-sm hover:bg-white/90 transition shrink-0 ml-3">
+                        查看
+                      </span>
                     </div>
                   </Link>
-                ))}
+                </div>
+              )}
+            </div>
+
+            {/* Row 3: Reversed Again! Left Wide (AI 专区大卡片), Right Narrow (AI 分类列表) */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+              {/* Left Wide: AI / Spotlight Card (7 cols) */}
+              {thirdHeroApp && (
+                <div className="lg:col-span-7 flex flex-col">
+                  <Link
+                    href={`/app/${thirdHeroApp.id}`}
+                    className="group relative flex-1 min-h-[460px] rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-border flex flex-col justify-between p-7 pb-24 text-white bg-neutral-900"
+                  >
+                    <div
+                      className="absolute inset-0 bg-cover bg-center group-hover:scale-105 transition-transform duration-700"
+                      style={{ backgroundImage: `url(${thirdHeroApp.cover_url})` }}
+                    />
+
+                    <div className="relative z-10 space-y-1">
+                      <span className="text-xs font-bold uppercase tracking-wider text-white/80">
+                        AI 智能探索 • 前沿科技
+                      </span>
+                      <h2 className="text-2xl lg:text-3xl font-extrabold leading-snug tracking-tight max-w-md">
+                        {thirdHeroApp.name}：{thirdHeroApp.tagline}
+                      </h2>
+                    </div>
+
+                    {/* Bottom Info Bar: Flush at bottom, full card width with blur, no rounded corners, no top border */}
+                    <div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-black/35 backdrop-blur-xl px-6 py-4">
+                      <div className="flex items-center gap-3.5 min-w-0">
+                        <img
+                          src={thirdHeroApp.icon_url}
+                          alt={thirdHeroApp.name}
+                          className="w-12 h-12 rounded-xl object-cover shadow-sm shrink-0"
+                        />
+                        <div className="min-w-0">
+                          <h3 className="font-bold text-sm leading-tight text-white truncate">
+                            {thirdHeroApp.name}
+                          </h3>
+                          <p className="text-xs text-white/80 truncate mt-0.5">
+                            {thirdHeroApp.category} • {thirdHeroApp.rating}★ ({thirdHeroApp.rating_count})
+                          </p>
+                        </div>
+                      </div>
+                      <span className="px-4 py-1.5 rounded-full bg-white text-black font-bold text-xs shadow-sm hover:bg-white/90 transition shrink-0 ml-3">
+                        查看
+                      </span>
+                    </div>
+                  </Link>
+                </div>
+              )}
+
+              {/* Right Narrow: AI 分类列表 (5 cols) */}
+              <div className="lg:col-span-5 bg-surface rounded-3xl p-6 border border-border flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                        AI 分类
+                      </span>
+                      <h2 className="text-xl font-bold text-foreground tracking-tight">
+                        智能创造可能
+                      </h2>
+                    </div>
+                    <Link
+                      href="/category/ai"
+                      className="text-xs font-semibold text-black hover:underline flex items-center gap-0.5"
+                    >
+                      查看全部 <ChevronRight className="w-3.5 h-3.5" />
+                    </Link>
+                  </div>
+
+                  <div className="divide-y divide-border">
+                    {aiListApps.map((app: AppItem, index: number) => (
+                      <div
+                        key={app.id}
+                        className="py-3 first:pt-0 last:pb-0 flex items-center justify-between gap-3 group"
+                      >
+                        <Link
+                          href={`/app/${app.id}`}
+                          className="flex items-center gap-3 flex-1 min-w-0"
+                        >
+                          <img
+                            src={app.icon_url}
+                            alt={app.name}
+                            className="w-11 h-11 rounded-xl object-cover shadow-sm group-hover:scale-105 transition-transform shrink-0"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-semibold text-sm text-foreground truncate group-hover:text-black transition-colors">
+                                {app.name}
+                              </span>
+                              {index === 0 && (
+                                <span className="text-[10px] px-1.5 py-0.5 bg-[#FF2D55]/15 text-[#FF2D55] font-bold rounded">
+                                  智能生成
+                                </span>
+                              )}
+                              {index === 1 && (
+                                <span className="text-[10px] px-1.5 py-0.5 bg-[#5856D6]/15 text-[#5856D6] font-bold rounded">
+                                  前沿算法
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground truncate mt-0.5">
+                              {app.tagline || app.description.slice(0, 30)}
+                            </p>
+                          </div>
+                        </Link>
+                        <Link
+                          href={`/app/${app.id}`}
+                          className="px-3.5 py-1 rounded-full bg-surface-active hover:bg-black hover:text-white text-black text-xs font-bold transition-all shrink-0"
+                        >
+                          查看
+                        </Link>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
-          </>
+
+          </div>
         )}
       </div>
       <Footer />

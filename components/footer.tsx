@@ -38,17 +38,22 @@ export function Footer() {
                   </Link>
                 </li>
                 <li>
-                  <Link href="/category/游戏" className="hover:text-foreground transition-colors">
+                  <Link href="/games" className="hover:text-foreground transition-colors">
                     游戏专区
                   </Link>
                 </li>
                 <li>
-                  <Link href="/category/工具" className="hover:text-foreground transition-colors">
+                  <Link href="/web" className="hover:text-foreground transition-colors">
+                    WEB 应用
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/category/tools" className="hover:text-foreground transition-colors">
                     效率工具
                   </Link>
                 </li>
                 <li>
-                  <Link href="/category/AI" className="hover:text-foreground transition-colors">
+                  <Link href="/category/ai" className="hover:text-foreground transition-colors">
                     AI 应用
                   </Link>
                 </li>

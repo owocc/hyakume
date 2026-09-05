@@ -15,7 +15,7 @@ export default async function SearchPage({ searchParams }: Props) {
   const apps = await searchApps(query);
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-8">
+    <div className="p-8 w-full space-y-8">
       {/* Search Header matching Image #6 */}
       <div className="border-b border-border pb-4">
         <h1 className="text-3xl font-extrabold text-foreground tracking-tight">

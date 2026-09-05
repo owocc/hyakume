@@ -6,7 +6,6 @@ import { useState } from "react";
 import type React from "react";
 import {
   AppWindow,
-  Layers,
   Gamepad2,
   LayoutGrid,
   Search,
@@ -19,15 +18,14 @@ import { cn } from "@/lib/utils";
 
 const PRIMARY_NAV = [
   { name: "Apps", href: "/apps", icon: AppWindow },
-  { name: "游戏", href: "/category/游戏", icon: Gamepad2 },
-  { name: "App", href: "/category/App", icon: Layers },
+  { name: "游戏", href: "/games", icon: Gamepad2 },
+  { name: "WEB", href: "/web", icon: Globe },
 ];
 
-const FIXED_CATEGORIES_NAV = [
-  { name: "全部", href: "/category/all", icon: LayoutGrid },
-  { name: "工具", href: "/category/工具", icon: Wrench },
-  { name: "WEB", href: "/category/WEB", icon: Globe },
-  { name: "AI", href: "/category/AI", icon: Sparkles },
+const CATEGORIES_NAV = [
+  { name: "全部", href: "/category/all", id: "all", icon: LayoutGrid },
+  { name: "工具", href: "/category/tools", id: "tools", icon: Wrench },
+  { name: "AI", href: "/category/ai", id: "ai", icon: Sparkles },
 ];
 
 export function Sidebar() {
@@ -94,12 +92,13 @@ export function Sidebar() {
           </div>
 
           <nav className="space-y-0.5">
-            {FIXED_CATEGORIES_NAV.map((cat) => {
+            {CATEGORIES_NAV.map((cat) => {
               const Icon = cat.icon;
               const isActive =
                 pathname === cat.href ||
-                (cat.name !== "全部" &&
-                  pathname === `/category/${encodeURIComponent(cat.name)}`);
+                (cat.id !== "all" &&
+                  (pathname === `/category/${cat.id}` ||
+                    pathname === `/category/${encodeURIComponent(cat.name)}`));
               return (
                 <Link
                   key={cat.name}
