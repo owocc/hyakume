@@ -17,12 +17,6 @@
   "images": {
     "binding": "IMAGES"
   },
-  "kv_namespaces": [
-    {
-      "binding": "VINEXT_KV_CACHE",
-      "id": "vinext_kv_cache_local"
-    }
-  ],
   "r2_buckets": [
     {
       "binding": "BUCKET",
