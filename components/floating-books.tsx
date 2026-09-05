@@ -5,7 +5,10 @@ export function FloatingBooks() {
     <div className="absolute inset-0 pointer-events-none select-none overflow-hidden z-0">
       {/* 1. Top-Left: Grey "The Creative Act" (Rick Rubin) */}
       <div
-        style={{ transform: "rotate(-16deg) translateY(-25%) translateX(-15%)" }}
+        style={{
+          animation: "float-in-top-left 1.35s cubic-bezier(0.16, 1, 0.3, 1) 0.08s both",
+          willChange: "transform, opacity",
+        }}
         className="absolute -top-12 -left-10 w-[190px] sm:w-[220px] md:w-[250px] h-[250px] sm:h-[280px] md:h-[320px] rounded-2xl bg-[#E3E2DC] border border-black/5 shadow-[0_20px_50px_rgba(0,0,0,0.12)] p-5 flex flex-col justify-between"
       >
         <div className="text-right font-serif text-[#1D1D1F] space-y-0.5 text-xs">
@@ -25,7 +28,10 @@ export function FloatingBooks() {
 
       {/* 2. Top-Right: Vibrant Lime/Green "OFF / NIKE" / Virgil Abloh */}
       <div
-        style={{ transform: "rotate(14deg) translateY(-25%) translateX(15%)" }}
+        style={{
+          animation: "float-in-top-right 1.35s cubic-bezier(0.16, 1, 0.3, 1) 0.22s both",
+          willChange: "transform, opacity",
+        }}
         className="absolute -top-12 -right-10 w-[190px] sm:w-[220px] md:w-[250px] h-[250px] sm:h-[280px] md:h-[320px] rounded-2xl bg-[#2FD658] border border-black/5 shadow-[0_20px_50px_rgba(0,0,0,0.12)] p-6 flex flex-col justify-between text-black"
       >
         <div className="space-y-1">
@@ -39,7 +45,10 @@ export function FloatingBooks() {
 
       {/* 3. Mid-Left: Bold Black "ID" Monograph */}
       <div
-        style={{ transform: "rotate(-12deg) translateX(-35%)" }}
+        style={{
+          animation: "float-in-mid-left 1.35s cubic-bezier(0.16, 1, 0.3, 1) 0.36s both",
+          willChange: "transform, opacity",
+        }}
         className="absolute top-1/2 -translate-y-1/2 -left-12 w-[180px] sm:w-[210px] md:w-[240px] h-[240px] sm:h-[280px] md:h-[310px] rounded-2xl bg-[#18181A] border border-black/5 shadow-[0_25px_60px_rgba(0,0,0,0.18)] p-5 sm:p-6 flex flex-col justify-between text-white"
       >
         <span className="text-[10px] font-mono text-neutral-400">01</span>
@@ -51,7 +60,10 @@ export function FloatingBooks() {
 
       {/* 4. Mid-Right: Dark "Principles of Logo Design" with Swan */}
       <div
-        style={{ transform: "rotate(11deg) translateX(30%)" }}
+        style={{
+          animation: "float-in-mid-right 1.35s cubic-bezier(0.16, 1, 0.3, 1) 0.50s both",
+          willChange: "transform, opacity",
+        }}
         className="absolute top-1/2 -translate-y-1/2 -right-10 w-[180px] sm:w-[210px] md:w-[240px] h-[240px] sm:h-[280px] md:h-[310px] rounded-2xl bg-[#212124] border border-black/5 shadow-[0_25px_60px_rgba(0,0,0,0.18)] p-5 sm:p-6 flex flex-col justify-between text-white"
       >
         <div className="space-y-1">
@@ -73,7 +85,10 @@ export function FloatingBooks() {
 
       {/* 5. Bottom-Left: Hot Magenta "Paula Scher: Works" */}
       <div
-        style={{ transform: "rotate(16deg) translateY(35%) translateX(-10%)" }}
+        style={{
+          animation: "float-in-bottom-left 1.35s cubic-bezier(0.16, 1, 0.3, 1) 0.64s both",
+          willChange: "transform, opacity",
+        }}
         className="absolute -bottom-10 -left-6 w-[180px] sm:w-[210px] md:w-[240px] h-[240px] sm:h-[270px] md:h-[300px] rounded-2xl bg-[#E62070] border border-black/5 shadow-[0_25px_60px_rgba(0,0,0,0.18)] p-5 flex flex-col justify-between text-white overflow-hidden"
       >
         <div className="relative z-10">
@@ -98,7 +113,10 @@ export function FloatingBooks() {
 
       {/* 6. Bottom-Center: Clean White "How to" Michael Bierut */}
       <div
-        style={{ transform: "rotate(-3deg) translateY(30%)" }}
+        style={{
+          animation: "float-in-bottom-center 1.35s cubic-bezier(0.16, 1, 0.3, 1) 0.78s both",
+          willChange: "transform, opacity",
+        }}
         className="absolute -bottom-10 left-1/2 -translate-x-1/2 w-[190px] sm:w-[220px] md:w-[250px] h-[250px] sm:h-[280px] md:h-[310px] rounded-2xl bg-white border border-neutral-200 shadow-[0_25px_60px_rgba(0,0,0,0.18)] p-6 flex flex-col justify-between text-black"
       >
         <div>
@@ -116,7 +134,10 @@ export function FloatingBooks() {
 
       {/* 7. Bottom-Right: Bright Yellow "Designing Brand Identity" */}
       <div
-        style={{ transform: "rotate(9deg) translateY(35%) translateX(10%)" }}
+        style={{
+          animation: "float-in-bottom-right 1.35s cubic-bezier(0.16, 1, 0.3, 1) 0.92s both",
+          willChange: "transform, opacity",
+        }}
         className="absolute -bottom-10 -right-6 w-[180px] sm:w-[210px] md:w-[240px] h-[240px] sm:h-[270px] md:h-[300px] rounded-2xl bg-[#FCEB38] border border-black/5 shadow-[0_25px_60px_rgba(0,0,0,0.18)] p-5 flex flex-col justify-between text-neutral-900"
       >
         <div className="space-y-1">

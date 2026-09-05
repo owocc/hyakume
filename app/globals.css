@@ -222,6 +222,84 @@ body {
   animation: skeleton-shimmer 1.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
+/* Floating Books entrance animations: Angled off-screen fly-in with smooth easing */
+@keyframes float-in-top-left {
+  0% {
+    opacity: 0;
+    transform: translate(-140%, -150%) rotate(-45deg) scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: rotate(-16deg) translateY(-25%) translateX(-15%) scale(1);
+  }
+}
+
+@keyframes float-in-top-right {
+  0% {
+    opacity: 0;
+    transform: translate(140%, -150%) rotate(42deg) scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: rotate(14deg) translateY(-25%) translateX(15%) scale(1);
+  }
+}
+
+@keyframes float-in-mid-left {
+  0% {
+    opacity: 0;
+    transform: translate(-180%, 0) rotate(-35deg) scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: rotate(-12deg) translateX(-35%) scale(1);
+  }
+}
+
+@keyframes float-in-mid-right {
+  0% {
+    opacity: 0;
+    transform: translate(180%, 0) rotate(32deg) scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: rotate(11deg) translateX(30%) scale(1);
+  }
+}
+
+@keyframes float-in-bottom-left {
+  0% {
+    opacity: 0;
+    transform: translate(-140%, 150%) rotate(45deg) scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: rotate(16deg) translateY(35%) translateX(-10%) scale(1);
+  }
+}
+
+@keyframes float-in-bottom-center {
+  0% {
+    opacity: 0;
+    transform: translate(0, 180%) rotate(-18deg) scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: rotate(-3deg) translateY(30%) scale(1);
+  }
+}
+
+@keyframes float-in-bottom-right {
+  0% {
+    opacity: 0;
+    transform: translate(140%, 150%) rotate(38deg) scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: rotate(9deg) translateY(35%) translateX(10%) scale(1);
+  }
+}
+
 @layer base {
   a {
     color: inherit;
