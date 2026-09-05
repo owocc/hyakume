@@ -3,6 +3,7 @@ import { getAllApps } from "@/lib/db";
 import type { AppItem } from "@/lib/types";
 import { ChevronRight, Sparkles, PlusCircle } from "lucide-react";
 import { Footer } from "@/components/footer";
+import { HeroFeaturedCard } from "@/components/hero-featured-card";
 
 export const dynamic = "force-dynamic";
 
@@ -78,46 +79,7 @@ export default async function AppsPage() {
               {/* Left Wide: Hero Feature Card (7 cols) */}
               {heroApp && (
                 <div className="lg:col-span-7 flex flex-col">
-                  <Link
-                    href={`/app/${heroApp.id}`}
-                    className="group relative flex-1 min-h-[460px] rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-border flex flex-col justify-between p-7 pb-24 text-white bg-neutral-900"
-                  >
-                    <div
-                      className="absolute inset-0 bg-cover bg-center group-hover:scale-105 transition-transform duration-700"
-                      style={{ backgroundImage: `url(${heroApp.cover_url})` }}
-                    />
-
-                    <div className="relative z-10 space-y-1">
-                      <span className="text-xs font-bold uppercase tracking-wider text-white/80">
-                        时下热门 • 精选主打
-                      </span>
-                      <h2 className="text-2xl lg:text-3xl font-extrabold leading-snug tracking-tight max-w-md">
-                        {heroApp.name}：{heroApp.tagline}
-                      </h2>
-                    </div>
-
-                    {/* Bottom Info Bar: Flush at bottom, full card width with blur, no rounded corners, no top border */}
-                    <div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-black/35 backdrop-blur-xl px-6 py-4">
-                      <div className="flex items-center gap-3.5 min-w-0">
-                        <img
-                          src={heroApp.icon_url}
-                          alt={heroApp.name}
-                          className="w-12 h-12 rounded-xl object-cover shadow-sm shrink-0"
-                        />
-                        <div className="min-w-0">
-                          <h3 className="font-bold text-sm leading-tight text-white truncate">
-                            {heroApp.name}
-                          </h3>
-                          <p className="text-xs text-white/80 truncate mt-0.5">
-                            {heroApp.category} • {heroApp.rating}★ ({heroApp.rating_count})
-                          </p>
-                        </div>
-                      </div>
-                      <span className="px-4 py-1.5 rounded-full bg-white text-black font-bold text-xs shadow-sm hover:bg-white/90 transition shrink-0 ml-3">
-                        查看
-                      </span>
-                    </div>
-                  </Link>
+                  <HeroFeaturedCard app={heroApp} tag="时下热门 • 精选主打" />
                 </div>
               )}
 
@@ -263,46 +225,7 @@ export default async function AppsPage() {
               {/* Right Wide: Featured Spotlight Card (7 cols) */}
               {secondHeroApp && (
                 <div className="lg:col-span-7 flex flex-col order-1 lg:order-2">
-                  <Link
-                    href={`/app/${secondHeroApp.id}`}
-                    className="group relative flex-1 min-h-[460px] rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-border flex flex-col justify-between p-7 pb-24 text-white bg-neutral-900"
-                  >
-                    <div
-                      className="absolute inset-0 bg-cover bg-center group-hover:scale-105 transition-transform duration-700"
-                      style={{ backgroundImage: `url(${secondHeroApp.cover_url})` }}
-                    />
-
-                    <div className="relative z-10 space-y-1">
-                      <span className="text-xs font-bold uppercase tracking-wider text-white/80">
-                        主打推荐 • 生产力飞跃
-                      </span>
-                      <h2 className="text-2xl lg:text-3xl font-extrabold leading-snug tracking-tight max-w-md">
-                        {secondHeroApp.name}：{secondHeroApp.tagline}
-                      </h2>
-                    </div>
-
-                    {/* Bottom Info Bar: Flush at bottom, full card width with blur, no rounded corners, no top border */}
-                    <div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-black/35 backdrop-blur-xl px-6 py-4">
-                      <div className="flex items-center gap-3.5 min-w-0">
-                        <img
-                          src={secondHeroApp.icon_url}
-                          alt={secondHeroApp.name}
-                          className="w-12 h-12 rounded-xl object-cover shadow-sm shrink-0"
-                        />
-                        <div className="min-w-0">
-                          <h3 className="font-bold text-sm leading-tight text-white truncate">
-                            {secondHeroApp.name}
-                          </h3>
-                          <p className="text-xs text-white/80 truncate mt-0.5">
-                            {secondHeroApp.category} • {secondHeroApp.rating}★ ({secondHeroApp.rating_count})
-                          </p>
-                        </div>
-                      </div>
-                      <span className="px-4 py-1.5 rounded-full bg-white text-black font-bold text-xs shadow-sm hover:bg-white/90 transition shrink-0 ml-3">
-                        查看
-                      </span>
-                    </div>
-                  </Link>
+                  <HeroFeaturedCard app={secondHeroApp} tag="主打推荐 • 生产力飞跃" />
                 </div>
               )}
             </div>
@@ -312,46 +235,7 @@ export default async function AppsPage() {
               {/* Left Wide: AI / Spotlight Card (7 cols) */}
               {thirdHeroApp && (
                 <div className="lg:col-span-7 flex flex-col">
-                  <Link
-                    href={`/app/${thirdHeroApp.id}`}
-                    className="group relative flex-1 min-h-[460px] rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-border flex flex-col justify-between p-7 pb-24 text-white bg-neutral-900"
-                  >
-                    <div
-                      className="absolute inset-0 bg-cover bg-center group-hover:scale-105 transition-transform duration-700"
-                      style={{ backgroundImage: `url(${thirdHeroApp.cover_url})` }}
-                    />
-
-                    <div className="relative z-10 space-y-1">
-                      <span className="text-xs font-bold uppercase tracking-wider text-white/80">
-                        AI 智能探索 • 前沿科技
-                      </span>
-                      <h2 className="text-2xl lg:text-3xl font-extrabold leading-snug tracking-tight max-w-md">
-                        {thirdHeroApp.name}：{thirdHeroApp.tagline}
-                      </h2>
-                    </div>
-
-                    {/* Bottom Info Bar: Flush at bottom, full card width with blur, no rounded corners, no top border */}
-                    <div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-black/35 backdrop-blur-xl px-6 py-4">
-                      <div className="flex items-center gap-3.5 min-w-0">
-                        <img
-                          src={thirdHeroApp.icon_url}
-                          alt={thirdHeroApp.name}
-                          className="w-12 h-12 rounded-xl object-cover shadow-sm shrink-0"
-                        />
-                        <div className="min-w-0">
-                          <h3 className="font-bold text-sm leading-tight text-white truncate">
-                            {thirdHeroApp.name}
-                          </h3>
-                          <p className="text-xs text-white/80 truncate mt-0.5">
-                            {thirdHeroApp.category} • {thirdHeroApp.rating}★ ({thirdHeroApp.rating_count})
-                          </p>
-                        </div>
-                      </div>
-                      <span className="px-4 py-1.5 rounded-full bg-white text-black font-bold text-xs shadow-sm hover:bg-white/90 transition shrink-0 ml-3">
-                        查看
-                      </span>
-                    </div>
-                  </Link>
+                  <HeroFeaturedCard app={thirdHeroApp} tag="AI 智能探索 • 前沿科技" />
                 </div>
               )}
 

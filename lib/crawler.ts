@@ -195,20 +195,47 @@ export async function crawlWebsite(targetUrl: string): Promise<CrawlResult> {
             document.querySelector('meta[name="msapplication-TileColor"]')?.getAttribute("content") ||
             "";
 
-          let detectedColor = themeColor;
-          if (!detectedColor) {
-            try {
-              const header = document.querySelector('header, nav, [role="banner"]');
-              const headerBg = header ? window.getComputedStyle(header).backgroundColor : "";
-              const bodyBg = window.getComputedStyle(document.body).backgroundColor;
-              const isValid = (c: string) => c && c !== "rgba(0, 0, 0, 0)" && c !== "transparent" && c !== "rgb(255, 255, 255)";
-              if (isValid(headerBg)) detectedColor = headerBg;
-              else if (isValid(bodyBg)) detectedColor = bodyBg;
-            } catch {
-              // ignore
+          // Sample colors across the page to find the dominant color (占据封面图最大的颜色)
+          const colorCounts: Record<string, number> = {};
+          const recordColor = (c: string | null | undefined) => {
+            if (!c || c === "rgba(0, 0, 0, 0)" || c === "transparent") return;
+            colorCounts[c] = (colorCounts[c] || 0) + 1;
+          };
+
+          if (themeColor) recordColor(themeColor);
+
+          try {
+            const docBg = window.getComputedStyle(document.documentElement).backgroundColor;
+            const bodyBg = window.getComputedStyle(document.body).backgroundColor;
+            recordColor(docBg);
+            recordColor(bodyBg);
+
+            // Sample 30 points across the top 60% of viewport (where card text and artwork sit)
+            const width = window.innerWidth || 1280;
+            const height = (window.innerHeight || 720) * 0.6;
+            const stepX = Math.floor(width / 6);
+            const stepY = Math.floor(height / 5);
+            for (let x = stepX / 2; x < width; x += stepX) {
+              for (let y = stepY / 2; y < height; y += stepY) {
+                const el = document.elementFromPoint(x, y);
+                if (el) {
+                  const bg = window.getComputedStyle(el).backgroundColor;
+                  recordColor(bg);
+                }
+              }
             }
+          } catch {
+            // ignore
           }
 
+          let detectedColor = themeColor || "";
+          let maxFreq = 0;
+          for (const [col, freq] of Object.entries(colorCounts)) {
+            if (freq > maxFreq) {
+              maxFreq = freq;
+              detectedColor = col;
+            }
+          }
           return { ogTitle, ogDesc, ogImg, icon, bodyText: bodyText.slice(0, 3000), detectedColor };
         });
 

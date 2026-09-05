@@ -30,6 +30,55 @@ export function parseColor(color: string): [number, number, number] | null {
 }
 
 /**
+ * Calculate perceived luminance of an RGB color (0 to 255)
+ * Using standard ITU-R BT.709 perceived luminance formula
+ */
+export function getColorLuminance(color: string): number {
+  const rgb = parseColor(color);
+  if (!rgb) return 0;
+  const [r, g, b] = rgb;
+  return 0.299 * r + 0.587 * g + 0.114 * b;
+}
+
+export interface CardTheme {
+  isLight: boolean;
+  textColor: string;
+  tagColor: string;
+  subtitleColor: string;
+  barBg: string;
+  buttonClass: string;
+}
+
+/**
+ * Determine contrast theme for card based on dominant background color.
+ * If the dominant color is light (luminance > 145), calculates contrasting dark text colors.
+ * If dark, uses crisp white text colors.
+ */
+export function getCardTheme(primaryColor?: string): CardTheme {
+  const isLight = primaryColor ? getColorLuminance(primaryColor) > 145 : false;
+
+  if (isLight) {
+    return {
+      isLight: true,
+      textColor: "#09090b",
+      tagColor: "rgba(9, 9, 11, 0.75)",
+      subtitleColor: "rgba(9, 9, 11, 0.80)",
+      barBg: "bg-white/70 text-black backdrop-blur-xl",
+      buttonClass: "bg-black text-white hover:bg-neutral-800 shadow-sm",
+    };
+  }
+
+  return {
+    isLight: false,
+    textColor: "#ffffff",
+    tagColor: "rgba(255, 255, 255, 0.80)",
+    subtitleColor: "rgba(255, 255, 255, 0.85)",
+    barBg: "bg-black/35 text-white backdrop-blur-xl",
+    buttonClass: "bg-white text-black hover:bg-white/90 shadow-sm",
+  };
+}
+
+/**
  * Generate computed gradient styles from the dominant/primary color.
  * If no color is provided or invalid, defaults to black-to-transparent overlay.
  */
