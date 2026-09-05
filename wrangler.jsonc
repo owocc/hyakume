@@ -15,6 +15,16 @@
   "images": {
     "binding": "IMAGES",
   },
+  "kv_namespaces": [
+    {
+      "binding": "VINEXT_KV_CACHE",
+      "id": "1473623a62194ca9975bee779c409c2e"
+    },
+    {
+      "binding": "hyakume",
+      "id": "1473623a62194ca9975bee779c409c2e"
+    }
+  ],
   "r2_buckets": [
     {
       "binding": "BUCKET",
