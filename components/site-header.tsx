@@ -9,7 +9,7 @@ export function SiteHeader() {
 
   const navLinks = [
     { label: "首页", href: "/" },
-    { label: "Today", href: "/today" },
+    { label: "Apps", href: "/apps" },
     { label: "全部应用", href: "/category/all" },
     { label: "推荐收录", href: "/recommend" },
   ];

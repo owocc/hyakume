@@ -15,7 +15,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN">
-      <body className="bg-surface text-foreground antialiased selection:bg-primary selection:text-primary-foreground">
+      <body className="bg-white text-foreground antialiased selection:bg-primary selection:text-primary-foreground">
         <AppShell>{children}</AppShell>
       </body>
     </html>

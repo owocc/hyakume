@@ -3,7 +3,6 @@
 import React from "react";
 import Link from "next/link";
 import { SITE_CONFIG } from "@/lib/config";
-import { ChevronDown } from "lucide-react";
 
 export interface LogoProps {
   /**
@@ -104,14 +103,13 @@ export function Logo({
   // 3. Sidebar header variant
   if (variant === "sidebar") {
     const content = (
-      <div className={`flex items-center justify-between w-full select-none ${className}`}>
+      <div className={`flex items-center w-full select-none ${className}`}>
         <div className="flex items-center gap-2.5">
           <AppIconMark size="sm" />
           <span className="font-semibold text-sm tracking-tight text-foreground">
             {text} 专区
           </span>
         </div>
-        <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
       </div>
     );
 

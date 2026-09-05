@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import type React from "react";
 import {
-  Calendar,
+  AppWindow,
   Layers,
   Gamepad2,
   LayoutGrid,
@@ -18,7 +18,7 @@ import { Logo } from "@/components/logo";
 import { cn } from "@/lib/utils";
 
 const PRIMARY_NAV = [
-  { name: "Today", href: "/today", icon: Calendar },
+  { name: "Apps", href: "/apps", icon: AppWindow },
   { name: "游戏", href: "/category/游戏", icon: Gamepad2 },
   { name: "App", href: "/category/App", icon: Layers },
 ];
@@ -43,9 +43,9 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="w-64 min-w-[16rem] h-screen sticky top-0 bg-surface/95 border-r border-border flex flex-col justify-between select-none z-30">
+    <aside className="w-64 min-w-[16rem] h-screen sticky top-0 bg-white border-r border-border flex flex-col select-none z-30 self-start">
       {/* Top Section */}
-      <div className="p-4 space-y-4 overflow-y-auto">
+      <div className="p-4 space-y-4 overflow-y-auto h-full">
         {/* Header Branding Dropdown with Logo */}
         <Logo variant="sidebar" href="/" />
 
@@ -118,57 +118,6 @@ export function Sidebar() {
             })}
           </nav>
         </div>
-      </div>
-
-      {/* Bottom Action: "推荐工具" with Lucide Sparkles Icon */}
-      <div className="p-3 border-t border-border bg-surface">
-        <Link
-          href="/recommend"
-          className={cn(
-            "group block w-full p-2.5 rounded-xl border transition-all duration-200",
-            pathname === "/recommend"
-              ? "bg-black text-white border-black shadow-md shadow-black/20"
-              : "bg-card hover:bg-muted border-border text-foreground hover:border-black/30"
-          )}
-        >
-          <div className="flex items-center gap-2.5">
-            <div
-              className={cn(
-                "w-8 h-8 rounded-lg flex items-center justify-center transition-colors",
-                pathname === "/recommend"
-                  ? "bg-white/20 text-white"
-                  : "bg-neutral-100 text-black group-hover:bg-black group-hover:text-white"
-              )}
-            >
-              <Sparkles className="w-4 h-4" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between">
-                <span className="font-semibold text-xs truncate">
-                  推荐工具
-                </span>
-                <span
-                  className={cn(
-                    "text-[10px] px-1.5 py-0.5 rounded font-medium",
-                    pathname === "/recommend"
-                      ? "bg-white/20 text-white"
-                      : "bg-muted text-foreground"
-                  )}
-                >
-                  AI 收录
-                </span>
-              </div>
-              <p
-                className={cn(
-                  "text-[10px] truncate",
-                  pathname === "/recommend" ? "text-white/80" : "text-muted-foreground"
-                )}
-              >
-                粘贴网址 · AI 一键自动化
-              </p>
-            </div>
-          </div>
-        </Link>
       </div>
     </aside>
   );

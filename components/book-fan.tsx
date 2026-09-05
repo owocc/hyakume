@@ -257,7 +257,7 @@ export function BookFan() {
           return (
             <Link
               key={book.id}
-              href="/today"
+              href="/apps"
               onMouseEnter={() => setHoveredId(book.id)}
               onMouseLeave={() => setHoveredId(null)}
               style={{

@@ -96,7 +96,7 @@ export default function LandingPage() {
             </Link>
 
             <Link
-              href="/today"
+              href="/apps"
               className="inline-flex items-center justify-center px-6 py-2.5 rounded-full bg-primary text-primary-foreground text-xs sm:text-sm font-medium hover:bg-primary-hover active:scale-[0.98] transition-all duration-200 shadow-sm hover:shadow-md"
             >
               View Apps

@@ -28,8 +28,8 @@ export function Footer() {
               </h4>
               <ul className="space-y-2.5 text-xs sm:text-sm text-muted-foreground">
                 <li>
-                  <Link href="/today" className="hover:text-foreground transition-colors">
-                    Today 精选
+                  <Link href="/apps" className="hover:text-foreground transition-colors">
+                    Apps 精选
                   </Link>
                 </li>
                 <li>
