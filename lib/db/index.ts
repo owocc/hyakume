@@ -31,10 +31,21 @@ function isNeonDatabase(url: string): boolean {
   return url.includes("neon.tech") || url.includes("neondb");
 }
 
+export function getDatabaseUrl(): string | undefined {
+  if (typeof process !== "undefined" && process.env?.DATABASE_URL) {
+    return process.env.DATABASE_URL;
+  }
+  const root = globalThis as {
+    __env__?: Record<string, string>;
+    env?: Record<string, string>;
+  };
+  return root.__env__?.DATABASE_URL || root.env?.DATABASE_URL;
+}
+
 export function getPool(): pg.Pool | null {
   if (poolInstance) return poolInstance;
 
-  const connectionString = process.env.DATABASE_URL;
+  const connectionString = getDatabaseUrl();
   if (!connectionString || isNeonDatabase(connectionString)) return null;
 
   const requiresSsl =
@@ -55,7 +66,7 @@ export function getPool(): pg.Pool | null {
 export function getDb(): DrizzleDatabase | null {
   if (dbInstance) return dbInstance;
 
-  const connectionString = process.env.DATABASE_URL;
+  const connectionString = getDatabaseUrl();
   if (!connectionString) return null;
 
   if (isNeonDatabase(connectionString)) {
@@ -70,7 +81,6 @@ export function getDb(): DrizzleDatabase | null {
   dbInstance = drizzlePg(pool, { schema });
   return dbInstance;
 }
-
 export const db: DrizzleDatabase = new Proxy({} as DrizzleDatabase, {
   get(_target, prop) {
     const database = getDb();
@@ -176,7 +186,7 @@ function rowToApp(row: schema.AppSelect | Record<string, unknown>): AppItem {
 export async function ensureTablesInitialized(): Promise<void> {
   if (initializationPromise) return initializationPromise;
 
-  const connectionString = process.env.DATABASE_URL;
+  const connectionString = getDatabaseUrl();
   if (!connectionString) return;
 
   initializationPromise = (async () => {

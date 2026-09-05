@@ -3,6 +3,32 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db } from "./db";
 import * as schema from "./db/schema";
 
+function getAuthSecret(): string | undefined {
+  if (typeof process !== "undefined" && process.env?.BETTER_AUTH_SECRET) {
+    return process.env.BETTER_AUTH_SECRET;
+  }
+  const root = globalThis as {
+    __env__?: Record<string, string>;
+    env?: Record<string, string>;
+  };
+  return root.__env__?.BETTER_AUTH_SECRET || root.env?.BETTER_AUTH_SECRET;
+}
+
+function getAuthUrl(): string {
+  if (typeof process !== "undefined" && process.env?.BETTER_AUTH_URL) {
+    return process.env.BETTER_AUTH_URL;
+  }
+  const root = globalThis as {
+    __env__?: Record<string, string>;
+    env?: Record<string, string>;
+  };
+  return (
+    root.__env__?.BETTER_AUTH_URL ||
+    root.env?.BETTER_AUTH_URL ||
+    "https://hyakume.owocc.workers.dev"
+  );
+}
+
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "pg",
@@ -29,8 +55,8 @@ export const auth = betterAuth({
         }
       : {}),
   },
-  secret: process.env.BETTER_AUTH_SECRET,
-  baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
+  secret: getAuthSecret(),
+  baseURL: getAuthUrl(),
 });
 
 export default auth;
