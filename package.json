@@ -6,6 +6,7 @@
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
     "@vinext/cloudflare": "1.0.0-beta.7",
+    "better-auth": "^1.7.2",
     "clsx": "^2.1.1",
     "dotenv": "^17.4.2",
     "drizzle-orm": "^0.45.2",

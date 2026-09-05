@@ -9,11 +9,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isNoSidebar =
     pathname === "/" ||
     pathname === "/recommend" ||
-    pathname.startsWith("/recommend/");
+    pathname.startsWith("/recommend/") ||
+    pathname === "/login" ||
+    pathname === "/register" ||
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/register");
 
   if (isNoSidebar) {
     return (
-      <main className="min-h-screen w-full bg-white flex flex-col overflow-x-hidden">
+      <main className="min-h-screen w-full flex flex-col overflow-x-hidden">
         {children}
       </main>
     );

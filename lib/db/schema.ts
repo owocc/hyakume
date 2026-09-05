@@ -90,3 +90,5 @@ export type AppSelect = typeof appsTable.$inferSelect;
 export type AppInsert = typeof appsTable.$inferInsert;
 export type ReviewSelect = typeof reviewsTable.$inferSelect;
 export type ReviewInsert = typeof reviewsTable.$inferInsert;
+
+export * from "./auth-schema";

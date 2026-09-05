@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Logo } from "@/components/logo";
-
+import { useSession, signOut } from "@/lib/auth-client";
 export function SiteHeader() {
   const pathname = usePathname();
+  const { data: session } = useSession();
 
   const navLinks = [
     { label: "首页", href: "/" },
@@ -45,8 +46,29 @@ export function SiteHeader() {
           })}
         </nav>
 
-        {/* Right side: Clean empty slot (no login and no signup as requested) */}
-        <div className="hidden sm:flex items-center gap-2 w-24 justify-end" aria-hidden="true" />
+        {/* Right side: User Session / Log In Button */}
+        <div className="flex items-center gap-3 justify-end">
+          {session?.user ? (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-neutral-600 font-medium hidden sm:inline max-w-[120px] truncate">
+                {session.user.name || session.user.email}
+              </span>
+              <button
+                onClick={() => signOut()}
+                className="text-xs px-3 py-1 rounded-full border border-neutral-200 hover:bg-neutral-100 text-neutral-600 font-medium transition cursor-pointer"
+              >
+                退出
+              </button>
+            </div>
+          ) : (
+            <Link
+              href="/login"
+              className="text-xs font-semibold px-4 py-1.5 rounded-full bg-neutral-900 text-white hover:bg-neutral-800 active:scale-95 transition-all shadow-sm"
+            >
+              登录
+            </Link>
+          )}
+        </div>
       </div>
     </header>
   );
