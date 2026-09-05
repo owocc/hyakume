@@ -54,6 +54,9 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
   }
 
   const previewImages = Array.from(new Set(rawImages));
+  const allImagesFailed =
+    previewImages.length > 0 &&
+    previewImages.every((_, i) => failedImages[i]);
 
 
   useEffect(() => {
@@ -252,9 +255,13 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
       <div className="space-y-4">
         <h2 className="text-lg font-bold text-[#1D1D1F]">预览</h2>
 
-        {previewImages.length === 0 ? (
-          <div className="text-xs text-[#86868B] py-8 text-center bg-[#F5F5F7] rounded-none border border-[#E5E5EA]">
-            暂无预览图片
+        {previewImages.length === 0 || allImagesFailed ? (
+          <div className="w-full py-16 px-4 bg-[#F5F5F7] rounded-none border border-[#E5E5EA] flex flex-col items-center justify-center text-center space-y-2 select-none">
+            <div className="w-12 h-12 rounded-full bg-neutral-200/60 flex items-center justify-center text-[#86868B] mb-1">
+              <ImageOff className="w-6 h-6 stroke-[1.5]" />
+            </div>
+            <p className="text-sm font-semibold text-[#1D1D1F]">该应用无预览图</p>
+            <p className="text-xs text-[#86868B]">开发者暂未提供此 Web App 的界面预览截图</p>
           </div>
         ) : (
           <div className="space-y-2">
