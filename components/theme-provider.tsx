@@ -13,12 +13,12 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType>({
   theme: "system",
   setTheme: () => {},
-  resolvedTheme: "light",
+  resolvedTheme: "dark",
 });
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>("system");
-  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("light");
+  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("dark");
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -44,10 +44,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
       setResolvedTheme(effectiveTheme);
 
-      if (effectiveTheme === "dark") {
-        root.classList.add("dark");
-      } else {
+      if (effectiveTheme === "light") {
+        root.classList.add("light");
         root.classList.remove("dark");
+      } else {
+        root.classList.add("dark");
+        root.classList.remove("light");
       }
       root.style.colorScheme = effectiveTheme;
     };
