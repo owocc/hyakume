@@ -109,7 +109,7 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
               href={app.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex-1 md:flex-none px-6 py-2.5 rounded-full bg-[#0071E3] hover:bg-[#0077ED] text-white font-bold text-sm shadow-md transition flex items-center justify-center gap-2"
+              className="flex-1 md:flex-none px-6 py-2.5 rounded-full bg-black hover:bg-neutral-800 text-white font-bold text-sm shadow-md transition flex items-center justify-center gap-2"
             >
               <span>访问网站</span>
               <ExternalLink className="w-4 h-4" />
@@ -247,7 +247,7 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
           </p>
           <button
             onClick={() => setDescExpanded(!descExpanded)}
-            className="text-xs font-semibold text-[#0071E3] hover:underline mt-2 inline-block cursor-pointer"
+            className="text-xs font-semibold text-black hover:underline mt-2 inline-block cursor-pointer"
           >
             {descExpanded ? "收起" : "更多"}
           </button>
@@ -259,7 +259,7 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
         <div className="space-y-4 border-t border-[#E5E5EA] pt-6">
           <div className="flex items-center gap-2">
             <h2 className="text-lg font-bold text-[#1D1D1F]">活动</h2>
-            <span className="text-xs font-bold text-[#0071E3]">
+            <span className="text-xs font-bold text-black">
               {app.events[0].badge || "现已推出"}
             </span>
           </div>
@@ -296,7 +296,7 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
           </div>
           <button
             onClick={() => setShowReviewModal(true)}
-            className="text-xs font-semibold text-[#0071E3] hover:underline"
+            className="text-xs font-semibold text-black hover:underline"
           >
             撰写评论
           </button>
@@ -382,7 +382,7 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
                     setReviewForm({ ...reviewForm, author: e.target.value })
                   }
                   placeholder="吃葡萄糖的小猫"
-                  className="w-full px-3 py-2 text-xs border border-[#E5E5EA] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0071E3]"
+                  className="w-full px-3 py-2 text-xs border border-[#E5E5EA] rounded-xl focus:outline-none focus:ring-2 focus:ring-black"
                 />
               </div>
               <div>
@@ -397,7 +397,7 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
                     setReviewForm({ ...reviewForm, title: e.target.value })
                   }
                   placeholder="希望改进"
-                  className="w-full px-3 py-2 text-xs border border-[#E5E5EA] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0071E3]"
+                  className="w-full px-3 py-2 text-xs border border-[#E5E5EA] rounded-xl focus:outline-none focus:ring-2 focus:ring-black"
                 />
               </div>
               <div>
@@ -435,7 +435,7 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
                     setReviewForm({ ...reviewForm, content: e.target.value })
                   }
                   placeholder="写下你对这款应用的真实体验与建议..."
-                  className="w-full px-3 py-2 text-xs border border-[#E5E5EA] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0071E3]"
+                  className="w-full px-3 py-2 text-xs border border-[#E5E5EA] rounded-xl focus:outline-none focus:ring-2 focus:ring-black"
                 />
               </div>
               <div className="flex justify-end gap-2 pt-2">
@@ -449,7 +449,7 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-5 py-1.5 text-xs font-bold bg-[#0071E3] text-white rounded-full hover:bg-[#0077ED] disabled:opacity-50"
+                  className="px-5 py-1.5 text-xs font-bold bg-black text-white rounded-full hover:bg-neutral-800 disabled:opacity-50"
                 >
                   {submitting ? "提交中..." : "发表评论"}
                 </button>
@@ -489,7 +489,7 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
             href={app.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[#0071E3] hover:underline ml-1"
+            className="text-black hover:underline ml-1"
           >
             开发者隐私政策
           </a>
@@ -500,7 +500,7 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Linked Data Card */}
           <div className="bg-[#F5F5F7] p-6 rounded-2xl border border-[#E5E5EA] text-center space-y-3">
-            <div className="w-12 h-12 mx-auto rounded-full bg-blue-100 flex items-center justify-center text-[#0071E3]">
+            <div className="w-12 h-12 mx-auto rounded-full bg-neutral-100 flex items-center justify-center text-black">
               <UserCheck className="w-6 h-6" />
             </div>
             <h3 className="font-bold text-sm text-[#1D1D1F]">与你关联的数据</h3>
@@ -523,7 +523,7 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
 
           {/* Not Linked Data Card */}
           <div className="bg-[#F5F5F7] p-6 rounded-2xl border border-[#E5E5EA] text-center space-y-3">
-            <div className="w-12 h-12 mx-auto rounded-full bg-blue-100 flex items-center justify-center text-[#0071E3]">
+            <div className="w-12 h-12 mx-auto rounded-full bg-neutral-100 flex items-center justify-center text-black">
               <UserX className="w-6 h-6" />
             </div>
             <h3 className="font-bold text-sm text-[#1D1D1F]">
@@ -549,7 +549,7 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
 
         <p className="text-[11px] text-[#86868B] pt-1">
           隐私规范可能因你使用的功能或你的年龄等因素而异。
-          <a href="#" className="text-[#0071E3] hover:underline ml-1">
+          <a href="#" className="text-black hover:underline ml-1">
             进一步了解
           </a>
         </p>
@@ -560,7 +560,7 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
         <h2 className="text-lg font-bold text-[#1D1D1F]">辅助功能</h2>
         <p className="text-xs text-[#86868B]">
           开发者尚未表明此 App 支持哪些辅助功能。
-          <a href="#" className="text-[#0071E3] hover:underline ml-1">
+          <a href="#" className="text-black hover:underline ml-1">
             进一步了解
           </a>
         </p>
@@ -574,7 +574,7 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
             href={app.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-xs font-semibold text-[#0071E3] hover:underline"
+            className="text-xs font-semibold text-black hover:underline"
           >
             隐私政策 ↗
           </a>
@@ -691,7 +691,7 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
                     </span>
                   </div>
                 </div>
-                <span className="px-4 py-1 rounded-full bg-white text-[#0071E3] font-bold text-xs shadow-sm shrink-0">
+                <span className="px-4 py-1 rounded-full bg-white text-black font-bold text-xs shadow-sm shrink-0">
                   查看
                 </span>
               </a>
