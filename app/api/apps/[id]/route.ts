@@ -1,4 +1,4 @@
-import { getAppById, getReviews, insertReview } from "@/lib/db";
+import { getAppById, getReviews, insertReview, deleteApp } from "@/lib/db";
 import type { ReviewItem } from "@/lib/types";
 
 export async function GET(
@@ -55,5 +55,22 @@ export async function POST(
   } catch (err) {
     console.error("Error submitting review:", err);
     return Response.json({ success: false, error: "Failed to submit review" }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  _request: Request,
+  props: { params: Promise<{ id: string }> }
+) {
+  const { id } = await props.params;
+  if (!id) {
+    return Response.json({ success: false, error: "App ID required" }, { status: 400 });
+  }
+  try {
+    await deleteApp(id);
+    return Response.json({ success: true, deleted: id });
+  } catch (err) {
+    console.error("Error deleting app:", err);
+    return Response.json({ success: false, error: "Failed to delete app" }, { status: 500 });
   }
 }

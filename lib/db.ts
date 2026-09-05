@@ -45,6 +45,24 @@ function getLocalDatabase(): SqliteDatabase {
     return db;
   }
 }
+export function extractDomain(inputUrl: string): { hostname: string; cleanDomain: string } {
+  let url = (inputUrl || "").trim();
+  if (!url) return { hostname: "", cleanDomain: "" };
+  if (!url.startsWith("http://") && !url.startsWith("https://")) {
+    url = `https://${url}`;
+  }
+  try {
+    const parsed = new URL(url);
+    const hostname = parsed.hostname.toLowerCase();
+    const cleanDomain = hostname.replace(/^www\./, "");
+    return { hostname, cleanDomain };
+  } catch {
+    const raw = (inputUrl || "").trim().toLowerCase();
+    const noProto = raw.replace(/^https?:\/\//, "");
+    const hostOnly = noProto.split("/")[0].split("?")[0].split(":")[0];
+    return { hostname: hostOnly, cleanDomain: hostOnly.replace(/^www\./, "") };
+  }
+}
 
 function initSqliteTables(db: SqliteDatabase): void {
   db.exec(`
@@ -100,6 +118,24 @@ function initSqliteTables(db: SqliteDatabase): void {
     db.exec("ALTER TABLE apps ADD COLUMN categories TEXT;");
   } catch {
     // column already exists
+  }
+  try {
+    const rows = db.prepare("SELECT id, url FROM apps").all() as Array<{ id: string; url: string }>;
+    const seen = new Set<string>();
+    for (const r of rows) {
+      const targetId = extractDomain(r.url).hostname;
+      if (!targetId) continue;
+      if (seen.has(targetId) || (r.id !== targetId && seen.has(r.id))) {
+        db.prepare("DELETE FROM apps WHERE id = ?").run(r.id);
+      } else {
+        seen.add(targetId);
+        if (r.id !== targetId) {
+          db.prepare("UPDATE apps SET id = ? WHERE id = ?").run(targetId, r.id);
+        }
+      }
+    }
+  } catch {
+    // ignore
   }
 }
 
@@ -164,6 +200,26 @@ async function ensureD1Initialized(db: D1Database): Promise<void> {
       await db.prepare("ALTER TABLE apps ADD COLUMN categories TEXT").run();
     } catch {
       // column already exists
+    }
+    try {
+      const rows = await db.prepare("SELECT id, url FROM apps").all<{ id: string; url: string }>();
+      if (rows.results) {
+        const seen = new Set<string>();
+        for (const r of rows.results) {
+          const targetId = extractDomain(r.url).hostname;
+          if (!targetId) continue;
+          if (seen.has(targetId) || (r.id !== targetId && seen.has(r.id))) {
+            await db.prepare("DELETE FROM apps WHERE id = ?").bind(r.id).run();
+          } else {
+            seen.add(targetId);
+            if (r.id !== targetId) {
+              await db.prepare("UPDATE apps SET id = ? WHERE id = ?").bind(targetId, r.id).run();
+            }
+          }
+        }
+      }
+    } catch {
+      // ignore
     }
   } catch (err) {
     console.error("Error initializing D1 tables:", err);
@@ -316,16 +372,28 @@ export async function getAllApps(options?: {
 
 export async function getAppById(id: string): Promise<AppItem | null> {
   const env = await getCloudflareEnv();
+  const rawId = (id || "").trim();
+  const decodedId = decodeURIComponent(rawId).toLowerCase();
 
   if (env && env.DB) {
     await ensureD1Initialized(env.DB);
-    const row = await env.DB.prepare("SELECT * FROM apps WHERE id = ?").bind(id).first<Record<string, unknown>>();
-    return row ? rowToApp(row) : null;
+    const row = await env.DB.prepare("SELECT * FROM apps WHERE id = ? OR id = ?").bind(rawId, decodedId).first<Record<string, unknown>>();
+    if (row) return rowToApp(row);
+
+    const byDomain = await getAppByDomain(decodedId);
+    if (byDomain) return byDomain;
+
+    return null;
   }
 
   const db = getLocalDatabase();
-  const row = db.prepare("SELECT * FROM apps WHERE id = ?").get(id) as Record<string, unknown> | undefined;
-  return row ? rowToApp(row) : null;
+  const row = db.prepare("SELECT * FROM apps WHERE id = ? OR id = ?").get(rawId, decodedId) as Record<string, unknown> | undefined;
+  if (row) return rowToApp(row);
+
+  const byDomain = await getAppByDomain(decodedId);
+  if (byDomain) return byDomain;
+
+  return null;
 }
 
 export async function searchApps(query: string): Promise<AppItem[]> {
@@ -354,8 +422,84 @@ export async function searchApps(query: string): Promise<AppItem[]> {
   return rows.map(rowToApp);
 }
 
+/**
+ * Find an existing app by its domain/hostname.
+ * Subdomains like docs.google.com and www.google.com are treated as separate domains.
+ * www.google.com and google.com match each other.
+ */
+export async function getAppByDomain(targetUrl: string): Promise<AppItem | null> {
+  const { hostname, cleanDomain } = extractDomain(targetUrl);
+  if (!hostname && !cleanDomain) return null;
+
+  const env = await getCloudflareEnv();
+  const pattern1 = `%${cleanDomain}%`;
+  const pattern2 = `%${hostname}%`;
+
+  if (env && env.DB) {
+    await ensureD1Initialized(env.DB);
+    const res = await env.DB.prepare(`
+      SELECT * FROM apps
+      WHERE developer_id = ? OR developer_id = ? OR url LIKE ? OR url LIKE ?
+      ORDER BY updated_at DESC, created_at DESC
+    `).bind(cleanDomain, hostname, pattern1, pattern2).all<Record<string, unknown>>();
+
+    const candidates = (res.results || []).map(rowToApp);
+    for (const app of candidates) {
+      const appDomain = extractDomain(app.url);
+      if (
+        appDomain.cleanDomain === cleanDomain ||
+        appDomain.hostname === hostname ||
+        (app.developer_id && (app.developer_id === cleanDomain || app.developer_id === hostname))
+      ) {
+        return app;
+      }
+    }
+    return null;
+  }
+
+  const db = getLocalDatabase();
+  const rows = db.prepare(`
+    SELECT * FROM apps
+    WHERE developer_id = ? OR developer_id = ? OR url LIKE ? OR url LIKE ?
+    ORDER BY updated_at DESC, created_at DESC
+  `).all(cleanDomain, hostname, pattern1, pattern2) as Record<string, unknown>[];
+
+  const candidates = rows.map(rowToApp);
+  for (const app of candidates) {
+    const appDomain = extractDomain(app.url);
+    if (
+      appDomain.cleanDomain === cleanDomain ||
+      appDomain.hostname === hostname ||
+      (app.developer_id && (app.developer_id === cleanDomain || app.developer_id === hostname))
+    ) {
+      return app;
+    }
+  }
+
+  return null;
+}
+
+export async function deleteApp(id: string): Promise<boolean> {
+  const env = await getCloudflareEnv();
+  if (env && env.DB) {
+    await ensureD1Initialized(env.DB);
+    await env.DB.prepare("DELETE FROM apps WHERE id = ?").bind(id).run();
+    return true;
+  }
+  const db = getLocalDatabase();
+  db.prepare("DELETE FROM apps WHERE id = ?").run(id);
+  return true;
+}
+
 export async function insertApp(app: AppItem): Promise<AppItem> {
   const env = await getCloudflareEnv();
+
+  // Deduplicate by domain: if an app with the same domain exists, reuse its ID to prevent duplicate rows
+  const existingApp = await getAppByDomain(app.url);
+  if (existingApp && existingApp.id !== app.id) {
+    app.id = existingApp.id;
+    app.created_at = existingApp.created_at || app.created_at;
+  }
 
   // Normalize categories: an app can belong to multiple categories: ["工具", "WEB", "AI"]
   const categories =

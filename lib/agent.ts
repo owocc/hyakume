@@ -91,6 +91,94 @@ function inferCategories(text: string): string[] {
 
   return cats.filter((c, i) => cats.indexOf(c) === i);
 }
+export interface AiConfig {
+  provider: "cloudflare" | "openai" | "deepseek" | "custom";
+  model: string;
+  apiKey?: string;
+  baseUrl?: string;
+}
+
+export function resolveAiConfig(env: Record<string, unknown>): AiConfig {
+  const getVal = (key: string): string => {
+    if (typeof env[key] === "string" && env[key]) return env[key] as string;
+    if (typeof process !== "undefined" && process.env && process.env[key]) return process.env[key] as string;
+    return "";
+  };
+
+  const rawProvider = (getVal("AI_PROVIDER") || "").toLowerCase().trim();
+  const apiKey = getVal("AI_API_KEY") || getVal("OPENAI_API_KEY") || getVal("DEEPSEEK_API_KEY");
+  const customBaseUrl = getVal("AI_BASE_URL");
+  const customModel = getVal("AI_MODEL");
+
+  if (rawProvider === "deepseek" || (!rawProvider && customBaseUrl.includes("deepseek"))) {
+    return {
+      provider: "deepseek",
+      model: customModel || "deepseek-chat",
+      apiKey,
+      baseUrl: customBaseUrl || "https://api.deepseek.com/v1",
+    };
+  }
+
+  if (rawProvider === "openai" || (!rawProvider && apiKey && !customBaseUrl)) {
+    return {
+      provider: "openai",
+      model: customModel || "gpt-4o-mini",
+      apiKey,
+      baseUrl: customBaseUrl || "https://api.openai.com/v1",
+    };
+  }
+
+  if (rawProvider === "custom" || (rawProvider && rawProvider !== "cloudflare" && customBaseUrl)) {
+    return {
+      provider: "custom",
+      model: customModel || "gpt-4o-mini",
+      apiKey,
+      baseUrl: customBaseUrl,
+    };
+  }
+
+  return {
+    provider: "cloudflare",
+    model: customModel || "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+    apiKey,
+    baseUrl: customBaseUrl,
+  };
+}
+
+async function callOpenAICompatible(options: {
+  baseUrl: string;
+  apiKey: string;
+  model: string;
+  systemPrompt: string;
+  userContent: string;
+}): Promise<string> {
+  const endpoint = options.baseUrl.replace(/\/+$/, "") + "/chat/completions";
+  const resp = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.apiKey ? { Authorization: `Bearer ${options.apiKey}` } : {}),
+    },
+    body: JSON.stringify({
+      model: options.model,
+      messages: [
+        { role: "system", content: options.systemPrompt },
+        { role: "user", content: options.userContent },
+      ],
+      temperature: 0.3,
+    }),
+  });
+
+  if (!resp.ok) {
+    const errText = await resp.text();
+    throw new Error(`AI API error (${resp.status}): ${errText}`);
+  }
+
+  const data = (await resp.json()) as {
+    choices?: Array<{ message?: { content?: string } }>;
+  };
+  return data.choices?.[0]?.message?.content?.trim() || "";
+}
 
 export async function summarizeWithAgent(crawl: CrawlResult): Promise<AppItem> {
   const env = await getCloudflareEnv();
@@ -105,13 +193,7 @@ export async function summarizeWithAgent(crawl: CrawlResult): Promise<AppItem> {
   let previewFeatures = ["核心功能", "即时体验", "多端同步"];
   const releaseNotes = `版本更新内容：\n【全新重磅内容】\n全新 Web App 官方收录上线，提供极速轻量浏览体验。`;
 
-  if (env && env.AI && typeof (env.AI as { run?: unknown }).run === "function") {
-    try {
-      const aiRunner = env.AI as {
-        run: (model: string, options: { messages: Array<{ role: string; content: string }> }) => Promise<unknown>;
-      };
-
-      const systemPrompt = `你是一位专业的 Apple App Store 与 Web App 编辑评审专家。
+  const systemPrompt = `你是一位专业的 Apple App Store 与 Web App 编辑评审专家。
 请根据提供的网站标题、网页元数据与网页文本，将该网站整理为一个精美的 App Store 风格的应用介绍。
 必须以 JSON 格式输出，不要包含任何 markdown 代码块标识。
 格式字段如下：
@@ -124,22 +206,71 @@ export async function summarizeWithAgent(crawl: CrawlResult): Promise<AppItem> {
   "developer": "开发者或组织名称"
 }`;
 
-      const userContent = `网址: ${crawl.url}
+  const userContent = `网址: ${crawl.url}
 标题: ${crawl.title}
 描述: ${crawl.description}
 页面内容节选: ${crawl.text.slice(0, 1000)}`;
 
-      const aiResponse = await aiRunner.run("@cf/meta/llama-3.3-70b-instruct", {
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userContent },
-        ],
-      });
+  const aiConfig = resolveAiConfig(env as Record<string, unknown>);
+  let rawText = "";
 
-      if (aiResponse && typeof aiResponse === "object" && "response" in aiResponse) {
-        const rawJson = String((aiResponse as { response: string }).response).trim();
-        const cleanJson = rawJson.replace(/^```json\s*/, "").replace(/\s*```$/, "");
-        const parsed = JSON.parse(cleanJson);
+  try {
+    if (aiConfig.provider !== "cloudflare" && aiConfig.baseUrl) {
+      rawText = await callOpenAICompatible({
+        baseUrl: aiConfig.baseUrl,
+        apiKey: aiConfig.apiKey || "",
+        model: aiConfig.model,
+        systemPrompt,
+        userContent,
+      });
+    } else if (env && env.AI && typeof (env.AI as { run?: unknown }).run === "function") {
+      const aiRunner = env.AI as {
+        run: (model: string, options: { messages: Array<{ role: string; content: string }> }) => Promise<unknown>;
+      };
+      let aiResponse: unknown;
+      try {
+        aiResponse = await aiRunner.run(aiConfig.model, {
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userContent },
+          ],
+        });
+      } catch {
+        aiResponse = await aiRunner.run("@cf/meta/llama-3.1-8b-instruct-fast", {
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userContent },
+          ],
+        });
+      }
+
+      if (aiResponse && typeof aiResponse === "object") {
+        const resObj = aiResponse as Record<string, unknown>;
+        if (typeof resObj.response === "string" && resObj.response.trim()) {
+          rawText = resObj.response.trim();
+        } else if (Array.isArray(resObj.choices) && resObj.choices.length > 0) {
+          const first = resObj.choices[0];
+          if (first && typeof first === "object") {
+            const firstObj = first as Record<string, unknown>;
+            if (firstObj.message && typeof firstObj.message === "object") {
+              const msgObj = firstObj.message as Record<string, unknown>;
+              if (typeof msgObj.content === "string") {
+                rawText = msgObj.content.trim();
+              }
+            }
+          }
+        }
+      }
+    }
+  } catch (aiErr) {
+    console.warn(`AI summarization failed with provider [${aiConfig.provider}]:`, aiErr);
+  }
+
+  if (rawText) {
+    try {
+      const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
         if (parsed.name) appName = parsed.name;
         if (parsed.tagline) tagline = parsed.tagline;
         if (Array.isArray(parsed.categories) && parsed.categories.length > 0) {
@@ -153,8 +284,8 @@ export async function summarizeWithAgent(crawl: CrawlResult): Promise<AppItem> {
           previewFeatures = parsed.preview_features.slice(0, 3);
         }
       }
-    } catch (aiErr) {
-      console.warn("Cloudflare Workers AI summarization fallback to rule engine:", aiErr);
+    } catch {
+      // ignore parse error, fallback to rule engine
     }
   }
 
@@ -163,7 +294,7 @@ export async function summarizeWithAgent(crawl: CrawlResult): Promise<AppItem> {
     description = `【应用介绍】\n${rawDesc}\n\n【核心特色】\n① 随时随地，即点即用：基于现代浏览器技术构建，免去繁琐安装，畅享无缝体验。\n② 丰富功能，极速响应：轻量化架构设计，全面兼顾数据效率与交互流畅度。\n③ 安全可信，多端适配：完美兼容桌面端与移动端主流现代 Web 浏览器。`;
   }
 
-  const id = `${appName.toLowerCase().replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, "-")}-${Date.now().toString(36)}`;
+  const id = parsedUrl.hostname.toLowerCase();
   const developerName = parsedUrl.hostname.replace(/^www\./, "");
   const primaryCategory = categories[0] || "WEB";
 

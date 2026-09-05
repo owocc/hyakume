@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Plus,
   Mic,
@@ -67,6 +68,7 @@ const PRESET_URLS = [
 ];
 
 export default function RecommendPage() {
+  const router = useRouter();
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [steps, setSteps] = useState<PipelineStep[]>(INITIAL_STEPS);
@@ -151,6 +153,7 @@ export default function RecommendPage() {
 
       const data = (await response.json()) as {
         success: boolean;
+        alreadyExists?: boolean;
         app?: AppItem;
         crawl?: { usedSeoImage: boolean };
         error?: string;
@@ -160,9 +163,18 @@ export default function RecommendPage() {
         throw new Error(data.error || "网页分析失败，请检查网址是否正确");
       }
 
+      if (data.alreadyExists) {
+        setSteps((prev) => prev.map((s) => ({ ...s, status: "completed" })));
+        router.push(`/app/${data.app.id}`);
+        return;
+      }
+
       setSteps((prev) => prev.map((s) => ({ ...s, status: "completed" })));
       setCreatedApp(data.app);
       setUsedSeoImage(Boolean(data.crawl?.usedSeoImage));
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      clearTimeout(timer3);
     } catch (err) {
       clearTimeout(timer1);
       clearTimeout(timer2);

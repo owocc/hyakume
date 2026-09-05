@@ -1,6 +1,6 @@
 import { crawlWebsite } from "@/lib/crawler";
 import { summarizeWithAgent } from "@/lib/agent";
-import { insertApp } from "@/lib/db";
+import { insertApp, getAppByDomain } from "@/lib/db";
 
 export async function POST(request: Request) {
   try {
@@ -14,6 +14,28 @@ export async function POST(request: Request) {
       );
     }
 
+    // Check if domain is already recorded
+    const existingApp = await getAppByDomain(rawUrl);
+    if (existingApp) {
+      return Response.json({
+        success: true,
+        alreadyExists: true,
+        app: existingApp,
+        crawl: {
+          url: existingApp.url,
+          title: existingApp.name,
+          usedSeoImage: Boolean(existingApp.seo_image),
+          coverUrl: existingApp.cover_url,
+        },
+        steps: [
+          { step: 1, name: "页面渲染与快照截取", status: "completed" },
+          { step: 2, name: "提取网页元数据与文本", status: "completed" },
+          { step: 3, name: "封面图决策与 R2 存储处理", status: "completed" },
+          { step: 4, name: "AI Agent 总结应用功能与特色", status: "completed" },
+          { step: 5, name: "结构化写入 Cloudflare D1 数据库", status: "completed" },
+        ],
+      });
+    }
     const steps = [
       { step: 1, name: "页面渲染与快照截取", status: "processing" },
       { step: 2, name: "提取网页元数据与文本", status: "pending" },
@@ -59,4 +81,19 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
+}
+
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const rawUrl = searchParams.get("url")?.trim();
+  if (!rawUrl) {
+    return Response.json({ success: false, error: "请提供有效的网址 (URL)" }, { status: 400 });
+  }
+
+  const app = await getAppByDomain(rawUrl);
+  return Response.json({
+    success: true,
+    exists: Boolean(app),
+    app,
+  });
 }
