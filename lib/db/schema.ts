@@ -1,0 +1,92 @@
+import { pgTable, text, integer, bigint, doublePrecision, boolean, index } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
+
+export const categoriesTable = pgTable("categories", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  icon: text("icon").default(""),
+  sort_order: integer("sort_order").default(0).notNull(),
+  created_at: bigint("created_at", { mode: "number" }).notNull(),
+});
+
+export const appsTable = pgTable(
+  "apps",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    tagline: text("tagline").default(""),
+    url: text("url").notNull(),
+    category: text("category").notNull(),
+    categories: text("categories"),
+    developer: text("developer").notNull(),
+    developer_id: text("developer_id"),
+    icon_url: text("icon_url").notNull(),
+    cover_url: text("cover_url").notNull(),
+    primary_color: text("primary_color"),
+    seo_image: text("seo_image"),
+    screenshots: text("screenshots"),
+    preview_features: text("preview_features"),
+    description: text("description").notNull(),
+    rating: doublePrecision("rating").default(4.5).notNull(),
+    rating_count: text("rating_count").default("1000+").notNull(),
+    ranking: text("ranking"),
+    age_rating: text("age_rating").default("12+").notNull(),
+    price: text("price").default("免费 · Web App").notNull(),
+    size: text("size").default("Web App").notNull(),
+    compatibility: text("compatibility").default("现代 Web 浏览器 / iOS / Android / macOS / Windows").notNull(),
+    languages: text("languages").default("简体中文和英语").notNull(),
+    version: text("version").default("1.0.0").notNull(),
+    version_date: text("version_date").default("近期更新").notNull(),
+    release_notes: text("release_notes").default(""),
+    privacy_linked: text("privacy_linked"),
+    privacy_not_linked: text("privacy_not_linked"),
+    events: text("events"),
+    related_topics: text("related_topics"),
+    featured: boolean("featured").default(false).notNull(),
+    trending: boolean("trending").default(false).notNull(),
+    created_at: bigint("created_at", { mode: "number" }).notNull(),
+    updated_at: bigint("updated_at", { mode: "number" }).notNull(),
+  },
+  (table) => [
+    index("idx_apps_category").on(table.category),
+    index("idx_apps_featured").on(table.featured),
+    index("idx_apps_trending").on(table.trending),
+  ]
+);
+
+export const reviewsTable = pgTable(
+  "reviews",
+  {
+    id: text("id").primaryKey(),
+    app_id: text("app_id")
+      .notNull()
+      .references(() => appsTable.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    author: text("author").notNull(),
+    rating: integer("rating").default(5).notNull(),
+    date: text("date").notNull(),
+    content: text("content").notNull(),
+    created_at: bigint("created_at", { mode: "number" }).notNull(),
+  },
+  (table) => [
+    index("idx_reviews_app_id").on(table.app_id),
+  ]
+);
+
+export const appsRelations = relations(appsTable, ({ many }) => ({
+  reviews: many(reviewsTable),
+}));
+
+export const reviewsRelations = relations(reviewsTable, ({ one }) => ({
+  app: one(appsTable, {
+    fields: [reviewsTable.app_id],
+    references: [appsTable.id],
+  }),
+}));
+
+export type CategorySelect = typeof categoriesTable.$inferSelect;
+export type CategoryInsert = typeof categoriesTable.$inferInsert;
+export type AppSelect = typeof appsTable.$inferSelect;
+export type AppInsert = typeof appsTable.$inferInsert;
+export type ReviewSelect = typeof reviewsTable.$inferSelect;
+export type ReviewInsert = typeof reviewsTable.$inferInsert;

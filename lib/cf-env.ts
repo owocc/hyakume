@@ -1,7 +1,6 @@
-import type { D1Database, R2Bucket, Fetcher, KVNamespace } from "@cloudflare/workers-types";
+import type { R2Bucket, Fetcher, KVNamespace } from "@cloudflare/workers-types";
 
 export interface CloudflareEnv {
-  DB?: D1Database;
   BUCKET?: R2Bucket;
   MYBROWSER?: Fetcher;
   AI?: unknown;

@@ -1,18 +1,20 @@
--- Cloudflare D1 Database Schema for Web App Store
+-- PostgreSQL Database Schema for Web App Store (Drizzle ORM)
 
 CREATE TABLE IF NOT EXISTS categories (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL UNIQUE,
-  icon TEXT,
-  created_at INTEGER NOT NULL
+  icon TEXT DEFAULT '',
+  sort_order INTEGER DEFAULT 0 NOT NULL,
+  created_at BIGINT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS apps (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
-  tagline TEXT,
+  tagline TEXT DEFAULT '',
   url TEXT NOT NULL,
   category TEXT NOT NULL,
+  categories TEXT,
   developer TEXT NOT NULL,
   developer_id TEXT,
   icon_url TEXT NOT NULL,
@@ -22,37 +24,36 @@ CREATE TABLE IF NOT EXISTS apps (
   screenshots TEXT,             -- JSON array of screenshot URLs
   preview_features TEXT,        -- JSON array of titles for the 3 search preview cards
   description TEXT NOT NULL,
-  rating REAL DEFAULT 4.5,
-  rating_count TEXT DEFAULT '1000+',
+  rating DOUBLE PRECISION DEFAULT 4.5 NOT NULL,
+  rating_count TEXT DEFAULT '1000+' NOT NULL,
   ranking TEXT,
-  age_rating TEXT DEFAULT '12+',
-  price TEXT DEFAULT '免费 · Web App',
-  size TEXT DEFAULT 'Web App',
-  compatibility TEXT DEFAULT '现代 Web 浏览器 / iOS / Android / macOS / Windows',
-  languages TEXT DEFAULT '简体中文和英语',
-  version TEXT DEFAULT '1.0.0',
-  version_date TEXT DEFAULT '近期更新',
-  release_notes TEXT,
+  age_rating TEXT DEFAULT '12+' NOT NULL,
+  price TEXT DEFAULT '免费 · Web App' NOT NULL,
+  size TEXT DEFAULT 'Web App' NOT NULL,
+  compatibility TEXT DEFAULT '现代 Web 浏览器 / iOS / Android / macOS / Windows' NOT NULL,
+  languages TEXT DEFAULT '简体中文和英语' NOT NULL,
+  version TEXT DEFAULT '1.0.0' NOT NULL,
+  version_date TEXT DEFAULT '近期更新' NOT NULL,
+  release_notes TEXT DEFAULT '',
   privacy_linked TEXT,          -- JSON array of data types
   privacy_not_linked TEXT,      -- JSON array of data types
   events TEXT,                  -- JSON array of events
   related_topics TEXT,          -- JSON array of related editorial topics
-  featured INTEGER DEFAULT 0,
-  trending INTEGER DEFAULT 0,
-  created_at INTEGER NOT NULL,
-  updated_at INTEGER NOT NULL
+  featured BOOLEAN DEFAULT FALSE NOT NULL,
+  trending BOOLEAN DEFAULT FALSE NOT NULL,
+  created_at BIGINT NOT NULL,
+  updated_at BIGINT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS reviews (
   id TEXT PRIMARY KEY,
-  app_id TEXT NOT NULL,
+  app_id TEXT NOT NULL REFERENCES apps(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
   author TEXT NOT NULL,
-  rating INTEGER DEFAULT 5,
+  rating INTEGER DEFAULT 5 NOT NULL,
   date TEXT NOT NULL,
   content TEXT NOT NULL,
-  created_at INTEGER NOT NULL,
-  FOREIGN KEY (app_id) REFERENCES apps(id) ON DELETE CASCADE
+  created_at BIGINT NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_apps_category ON apps(category);
