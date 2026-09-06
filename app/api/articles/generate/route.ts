@@ -1,9 +1,10 @@
 import { auth } from "@/lib/auth";
-import { crawlWebsite, type CrawlResult } from "@/lib/crawler";
-import { analyzeAndGenerateArticle } from "@/lib/agent";
+import { crawlWebsite, type CrawlResult, normalizeUrl } from "@/lib/crawler";
+import { analyzeAndGenerateArticle, summarizeWithAgent, detectTargetKind } from "@/lib/agent";
 import {
   getAppById,
-  getAppByDomain,
+  findAppForUrl,
+  insertApp,
   insertArticle,
   updateTask,
   createTask,
@@ -30,17 +31,12 @@ export async function POST(request: Request) {
     let app: AppItem | null = null;
     let targetUrl = body.url?.trim() || "";
 
+    // 1. If explicit appId provided, lookup app directly
     if (body.appId) {
       app = await getAppById(body.appId);
-      if (app) targetUrl = app.url;
-    }
-
-    if (!app && targetUrl) {
-      app = await getAppByDomain(targetUrl);
-    }
-
-    if (!targetUrl && app) {
-      targetUrl = app.url;
+      if (app && !targetUrl) {
+        targetUrl = app.url;
+      }
     }
 
     if (!targetUrl) {
@@ -50,9 +46,24 @@ export async function POST(request: Request) {
       );
     }
 
+    targetUrl = normalizeUrl(targetUrl);
+
+    // 2. If app not found yet, search specifically for this target URL (not generic domain)
+    if (!app) {
+      app = await findAppForUrl(targetUrl);
+    }
+
     const taskId =
       body.taskId ||
       "art_task_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+
+    const targetKind = detectTargetKind(targetUrl);
+    const domainOrRepo =
+      targetKind.kind === "github_project" && targetKind.githubRepo
+        ? `${targetKind.githubRepo.owner}/${targetKind.githubRepo.repo}`
+        : targetKind.kind === "github_profile" && targetKind.githubUsername
+        ? `github.com/${targetKind.githubUsername}`
+        : new URL(targetUrl).hostname;
 
     // Track generation task
     try {
@@ -60,53 +71,90 @@ export async function POST(request: Request) {
         id: taskId,
         user_id: userId,
         url: targetUrl,
-        domain: app?.id || new URL(targetUrl).hostname,
+        domain: domainOrRepo,
         status: "processing",
-        step: 2,
-        step_name: "打字机正在校准排版与智能构思",
-        progress: 30,
+        step: 1,
+        step_name: "正在深入抓取目标页面元数据与多端内容",
+        progress: 15,
         app_id: app?.id,
         created_at: Date.now(),
         updated_at: Date.now(),
       });
     } catch {}
 
-    // 1. Crawl website with timeout protection, falling back to cached app data
+    // 3. Crawl target website specifically with timeout protection
     let crawlResult: CrawlResult;
     try {
       const crawlPromise = crawlWebsite(targetUrl, { isSubpage: false });
       const { promise: timeoutPromise, reject } = Promise.withResolvers<never>();
-      const timer = setTimeout(() => reject(new Error("Crawl timeout")), 8000);
+      const timer = setTimeout(() => reject(new Error("Crawl timeout")), 12000);
       try {
         crawlResult = await Promise.race([crawlPromise, timeoutPromise]);
       } finally {
         clearTimeout(timer);
       }
     } catch {
+      let fallbackTitle = targetUrl;
+      let fallbackDesc = "";
+      if (targetKind.kind === "github_project" && targetKind.githubRepo) {
+        fallbackTitle = `${targetKind.githubRepo.repo} (${targetKind.githubRepo.owner})`;
+        fallbackDesc = `GitHub 开源项目：${targetKind.githubRepo.owner}/${targetKind.githubRepo.repo}`;
+      } else if (targetKind.kind === "github_profile" && targetKind.githubUsername) {
+        fallbackTitle = `${targetKind.githubUsername} 的 GitHub 个人主页`;
+        fallbackDesc = `GitHub 开发者主页：@${targetKind.githubUsername}`;
+      } else if (app) {
+        fallbackTitle = app.name;
+        fallbackDesc = app.description || app.tagline || "";
+      }
+
       crawlResult = {
         url: targetUrl,
-        title: app?.name || targetUrl,
-        description: app?.description || app?.tagline || "",
+        title: fallbackTitle,
+        description: fallbackDesc,
         coverUrl: app?.cover_url || "",
         seoImage: app?.seo_image,
         screenshots: app?.screenshots || [],
         deviceScreenshots: app?.device_screenshots,
         iconUrl: app?.icon_url || "",
-        text: `${app?.name || ""} ${app?.tagline || ""} ${app?.description || ""}`,
+        text: `${fallbackTitle} ${fallbackDesc}`,
         primaryColor: app?.primary_color,
         usedSeoImage: Boolean(app?.seo_image),
       };
     }
+
+    // 4. Automatic application binding & generation check ("自动绑定应用和检测是否需要触发应用生成")
+    if (!app) {
+      try {
+        await updateTask(taskId, {
+          step: 2,
+          step_name: "检测到未收录独立应用，自动构建应用档案与快照",
+          progress: 35,
+        });
+      } catch {}
+
+      const generatedAppData = await summarizeWithAgent(crawlResult);
+      generatedAppData.user_id = userId;
+      generatedAppData.url = targetUrl;
+
+      app = await insertApp(generatedAppData);
+
+      try {
+        await updateTask(taskId, {
+          app_id: app.id,
+        });
+      } catch {}
+    }
+
     try {
       await updateTask(taskId, {
         step: 3,
-        step_name: "打字机正在打字排版核心章节",
+        step_name: "打字机正在校准排版与智能构思专属文章",
         progress: 60,
       });
     } catch {}
 
-    // 2. Run AI Analysis with specialized adapters (GitHub Profile, Project, Web App)
-    const analysis = await analyzeAndGenerateArticle(crawlResult, app || undefined);
+    // 5. Run AI Analysis & Article Generation specifically for targetUrl
+    const analysis = await analyzeAndGenerateArticle(crawlResult, app);
 
     try {
       await updateTask(taskId, {
@@ -116,8 +164,8 @@ export async function POST(request: Request) {
       });
     } catch {}
 
-    // 3. Persist article to DB attributed to this user
-    const appId = app?.id || new URL(targetUrl).hostname;
+    // 6. Persist article to DB bound to the app
+    const appId = app.id;
     const articleId =
       "art_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
@@ -133,9 +181,13 @@ export async function POST(request: Request) {
       cover_image:
         crawlResult.screenshots[0] ||
         crawlResult.coverUrl ||
-        app?.cover_url ||
+        app.cover_url ||
         "",
-      github_url: analysis.github_url,
+      github_url:
+        analysis.github_url ||
+        (targetKind.kind === "github_project" && targetKind.githubRepo
+          ? `https://github.com/${targetKind.githubRepo.owner}/${targetKind.githubRepo.repo}`
+          : undefined),
       x_url: analysis.x_url,
       links: analysis.links,
       source_url: targetUrl,

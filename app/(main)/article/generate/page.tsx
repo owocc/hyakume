@@ -256,8 +256,16 @@ function TypewriterGeneratorContent() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          appId: loadedApp?.id || (clean.startsWith("http") ? undefined : clean),
-          url: clean.startsWith("http") ? clean : loadedApp?.url,
+          appId:
+            clean.startsWith("http://") || clean.startsWith("https://")
+              ? loadedApp && loadedApp.url === clean
+                ? loadedApp.id
+                : undefined
+              : loadedApp?.id || clean,
+          url:
+            clean.startsWith("http://") || clean.startsWith("https://")
+              ? clean
+              : loadedApp?.url,
           tag: selectedTag,
           taskId,
         }),
@@ -370,10 +378,14 @@ function TypewriterGeneratorContent() {
               type="text"
               value={targetInput}
               onChange={(e) => {
-                setTargetInput(e.target.value);
+                const val = e.target.value;
+                setTargetInput(val);
                 if (errorMsg) setErrorMsg("");
+                if (loadedApp && loadedApp.url !== val && loadedApp.name !== val && loadedApp.id !== val) {
+                  setLoadedApp(null);
+                }
               }}
-              placeholder="输入待评测应用名称或网址 (如: Linear, Figma, https://...)"
+              placeholder="输入任意目标网址或应用名称 (如: https://github.com/owocc/hyakume, https://linear.app)"
               disabled={isGenerating}
               className="flex-1 w-full px-4 py-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-xs text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#788863]/30"
             />

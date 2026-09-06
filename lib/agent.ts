@@ -258,10 +258,15 @@ export function generateFallbackArticle(
   parentApp?: AppItem
 ): SubpageAnalysisResult {
   const parsedUrl = new URL(crawl.url);
-  const appName = parentApp?.name || cleanTitle(crawl.title, parsedUrl.hostname);
+  const targetKind = detectTargetKind(crawl.url);
+  const fallbackRepoName = targetKind.kind === "github_project" && targetKind.githubRepo
+    ? targetKind.githubRepo.repo
+    : targetKind.kind === "github_profile" && targetKind.githubUsername
+    ? targetKind.githubUsername
+    : "";
+  const appName = fallbackRepoName || parentApp?.name || cleanTitle(crawl.title, parsedUrl.hostname);
   const pageTitle = crawl.title || appName;
   const description = crawl.description || `${appName} 是一款优秀的现代网络服务与生产力工具。`;
-  const targetKind = detectTargetKind(crawl.url);
   const isTargetX = parsedUrl.hostname.includes("x.com") || parsedUrl.hostname.includes("twitter.com");
   const xUrl = isTargetX && isValidXUrl(crawl.url) ? crawl.url : undefined;
   const isSubpage = parsedUrl.pathname !== "/" && parsedUrl.pathname !== "";
@@ -706,8 +711,24 @@ export async function summarizeWithAgent(crawl: CrawlResult): Promise<AppItem> {
     description = `【应用介绍】\n${rawDesc}\n\n【核心特色】\n① 随时随地，即点即用：基于现代浏览器技术构建，免去繁琐安装，畅享无缝体验。\n② 丰富功能，极速响应：轻量化架构设计，全面兼顾数据效率与交互流畅度。\n③ 安全可信，多端适配：完美兼容桌面端与移动端主流现代 Web 浏览器。`;
   }
 
-  const id = parsedUrl.hostname.toLowerCase();
-  const developerName = parsedUrl.hostname.replace(/^www\./, "");
+  let id = parsedUrl.hostname.toLowerCase();
+  let developerName = parsedUrl.hostname.replace(/^www\./, "");
+  if (!developer) {
+    developer = `${developerName} Official`;
+  }
+  if (targetKind.kind === "github_project" && targetKind.githubRepo) {
+    id = `gh-${targetKind.githubRepo.owner.toLowerCase()}-${targetKind.githubRepo.repo.toLowerCase()}`;
+    developerName = targetKind.githubRepo.owner;
+    developer = targetKind.githubRepo.owner;
+  } else if (targetKind.kind === "github_profile" && targetKind.githubUsername) {
+    id = `gh-user-${targetKind.githubUsername.toLowerCase()}`;
+    developerName = targetKind.githubUsername;
+    developer = targetKind.githubUsername;
+  } else if (parsedUrl.pathname.length > 1) {
+    const cleanPath = parsedUrl.pathname.replace(/^\/+|\/+$/g, "").replace(/[^a-zA-Z0-9_-]+/g, "-").toLowerCase();
+    id = `${parsedUrl.hostname.split(".")[0]}-${cleanPath}`.slice(0, 48);
+  }
+
   const primaryCategory = categories[0] || "WEB";
 
   const app: AppItem = {
@@ -717,7 +738,7 @@ export async function summarizeWithAgent(crawl: CrawlResult): Promise<AppItem> {
     url: crawl.url,
     category: primaryCategory,
     categories,
-    developer: `${developerName} Official`,
+    developer,
     developer_id: developerName,
     icon_url: crawl.iconUrl,
     cover_url: crawl.coverUrl,
