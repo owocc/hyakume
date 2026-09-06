@@ -28,7 +28,7 @@ import {
   RotateCcw,
   Layers,
 } from "lucide-react";
-import type { AppItem, ArticleItem, SubpageItem } from "@/lib/types";
+import type { AppItem, ArticleItem, SubpageItem, PipelineTaskItem } from "@/lib/types";
 import {
   DashboardSkeleton,
   DashboardOverviewSkeleton,
@@ -80,11 +80,11 @@ function DashboardContent() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>("latest");
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-
   // Data fetching
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<PublicationsResponse | null>(null);
-
+  const [tasks, setTasks] = useState<PipelineTaskItem[]>([]);
+  const [tasksLoading, setTasksLoading] = useState(true);
   // Redirect to login if unauthenticated
   useEffect(() => {
     if (!sessionLoading && !session?.user) {
@@ -118,6 +118,46 @@ function DashboardContent() {
     }
   }, [session, scope]);
 
+  // Fetch user ongoing pipeline tasks
+  const fetchTasks = async () => {
+    try {
+      const res = await fetch("/api/user/tasks");
+      if (res.ok) {
+        const json = (await res.json()) as { success: boolean; tasks: PipelineTaskItem[] };
+        if (json.success && Array.isArray(json.tasks)) {
+          setTasks(json.tasks);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch tasks:", err);
+    } finally {
+      setTasksLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (session?.user) {
+      fetchTasks();
+    }
+  }, [session]);
+
+  // Auto poll active tasks every 3.5s
+  useEffect(() => {
+    const hasActive = tasks.some((t) => t.status === "processing");
+    if (!hasActive) return;
+
+    const timer = setInterval(() => {
+      fetchTasks();
+      fetchPublications(scope);
+    }, 3500);
+
+    return () => clearInterval(timer);
+  }, [tasks, scope]);
+
+  const activeTasks = useMemo(
+    () => tasks.filter((t) => t.status === "processing"),
+    [tasks]
+  );
   const userName = session?.user?.name || session?.user?.email?.split("@")[0] || "User";
   const userEmail = session?.user?.email || "";
   const userAvatar = session?.user?.image;
@@ -186,9 +226,15 @@ function DashboardContent() {
   }
 
   const navItems = [
-    { key: "dashboard", label: "数据概览 (Dashboard)", icon: BarChart3, count: null },
-    { key: "articles", label: "我的文章 (Articles)", icon: FileText, count: data?.counts?.articles || 0 },
-    { key: "apps", label: "推荐应用 (Apps)", icon: AppWindow, count: data?.counts?.apps || 0 },
+    {
+      key: "dashboard",
+      label: "数据概览 (Dashboard)",
+      icon: BarChart3,
+      count: null,
+      activeBadge: activeTasks.length > 0 ? `${activeTasks.length} 进行中` : null,
+    },
+    { key: "articles", label: "我的文章 (Articles)", icon: FileText, count: data?.counts?.articles || 0, activeBadge: null },
+    { key: "apps", label: "推荐应用 (Apps)", icon: AppWindow, count: data?.counts?.apps || 0, activeBadge: null },
   ] as const;
 
   return (
@@ -311,7 +357,12 @@ function DashboardContent() {
 
                     {/* Active indicator bar or count */}
                     <div className="flex items-center gap-1.5">
-                      {item.count !== null && item.count > 0 && (
+                      {item.activeBadge && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-500 text-white font-bold animate-pulse shadow-2xs">
+                          {item.activeBadge}
+                        </span>
+                      )}
+                      {item.count !== null && item.count > 0 && !item.activeBadge && (
                         <span
                           className={`text-[10px] px-1.5 py-0.5 rounded-full ${
                             isActive
@@ -561,6 +612,179 @@ function DashboardContent() {
                 </div>
               </div>
 
+              {/* Ongoing Tasks Section: 实时显示进行中的任务与进度条 */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    {activeTasks.length > 0 ? (
+                      <span className="relative flex h-3 w-3">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-rose-500" />
+                      </span>
+                    ) : (
+                      <Clock className="w-4 h-4 text-neutral-400" />
+                    )}
+                    <h2 className="text-base font-bold text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
+                      <span>进行中的分析与发布任务</span>
+                      {activeTasks.length > 0 && (
+                        <span className="px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 text-xs font-semibold border border-rose-200 dark:border-rose-900/60">
+                          {activeTasks.length} 项进行中
+                        </span>
+                      )}
+                    </h2>
+                  </div>
+
+                  <Link
+                    href="/recommend"
+                    className="text-xs text-rose-500 hover:text-rose-600 font-semibold flex items-center gap-1"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>新建推荐任务</span>
+                  </Link>
+                </div>
+
+                {tasks.length === 0 ? (
+                  <div className="p-5 rounded-2xl bg-white dark:bg-card border border-dashed border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-neutral-400 flex items-center justify-center">
+                        <Clock className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-foreground">暂无后台执行的任务</p>
+                        <p className="text-[11px] text-muted-foreground">提交新应用或重新更新已有域名后，此处将实时呈现进度与流水线阶段。</p>
+                      </div>
+                    </div>
+                    <Link
+                      href="/recommend"
+                      className="text-xs px-3.5 py-1.5 rounded-full bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-foreground font-medium transition"
+                    >
+                      立即提交
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {tasks.slice(0, 5).map((task) => {
+                      const isProcessing = task.status === "processing";
+                      const isFailed = task.status === "failed";
+                      const isCompleted = task.status === "completed";
+
+                      return (
+                        <div
+                          key={task.id}
+                          className={`p-4 sm:p-5 rounded-2xl bg-white dark:bg-card border transition-all ${
+                            isProcessing
+                              ? "border-rose-300 dark:border-rose-900/80 shadow-xs ring-1 ring-rose-500/10"
+                              : "border-neutral-200/80 dark:border-neutral-800 shadow-2xs"
+                          }`}
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div
+                                className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${
+                                  isProcessing
+                                    ? "bg-rose-50 dark:bg-rose-950/40 text-rose-500 border-rose-200 dark:border-rose-900/60"
+                                    : isCompleted
+                                    ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-500 border-emerald-200 dark:border-emerald-900/60"
+                                    : "bg-red-50 dark:bg-red-950/40 text-red-500 border-red-200 dark:border-red-900/60"
+                                }`}
+                              >
+                                {isProcessing ? (
+                                  <RotateCcw className="w-4 h-4 animate-spin" />
+                                ) : isCompleted ? (
+                                  <CheckCircle2 className="w-4 h-4" />
+                                ) : (
+                                  <X className="w-4 h-4" />
+                                )}
+                              </div>
+
+                              <div className="min-w-0 space-y-0.5">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm font-bold text-foreground truncate max-w-xs sm:max-w-md">
+                                    {task.url}
+                                  </span>
+                                  <span
+                                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                                      isProcessing
+                                        ? "bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400"
+                                        : isCompleted
+                                        ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400"
+                                        : "bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400"
+                                    }`}
+                                  >
+                                    {isProcessing
+                                      ? "处理中"
+                                      : isCompleted
+                                      ? "已完成"
+                                      : "处理失败"}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-muted-foreground flex items-center gap-2">
+                                  <span>步骤 {task.step}/5: {task.step_name}</span>
+                                  <span>•</span>
+                                  <span className="font-mono text-[11px] font-bold text-foreground">{task.progress}%</span>
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex items-center gap-2 shrink-0">
+                              {isProcessing ? (
+                                <Link
+                                  href={`/recommend/${task.id}?url=${encodeURIComponent(task.url)}`}
+                                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-rose-500 hover:bg-rose-600 text-white text-xs font-semibold shadow-xs transition active:scale-95"
+                                >
+                                  <span>查看实时流水线</span>
+                                  <ArrowRight className="w-3 h-3" />
+                                </Link>
+                              ) : isCompleted ? (
+                                <div className="flex items-center gap-2">
+                                  {task.article_id && (
+                                    <Link
+                                      href={`/article/${task.article_id}`}
+                                      className="px-3 py-1.5 rounded-full border border-rose-200 dark:border-rose-900/60 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-semibold transition shadow-2xs"
+                                    >
+                                      阅读文章
+                                    </Link>
+                                  )}
+                                  {task.app_id && (
+                                    <Link
+                                      href={`/app/${task.app_id}`}
+                                      className="px-3 py-1.5 rounded-full bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-foreground text-xs font-semibold transition"
+                                    >
+                                      查看应用
+                                    </Link>
+                                  )}
+                                </div>
+                              ) : (
+                                <Link
+                                  href={`/recommend?url=${encodeURIComponent(task.url)}`}
+                                  className="px-3.5 py-1.5 rounded-full border border-neutral-200 dark:border-neutral-700 text-xs font-medium hover:bg-neutral-100 dark:hover:bg-neutral-800 transition"
+                                >
+                                  重试
+                                </Link>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Animated Progress Bar */}
+                          <div className="mt-3 w-full bg-neutral-100 dark:bg-neutral-800 rounded-full h-1.5 overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all duration-500 ${
+                                isProcessing
+                                  ? "bg-gradient-to-r from-rose-500 via-pink-500 to-amber-400 animate-pulse"
+                                  : isCompleted
+                                  ? "bg-emerald-500"
+                                  : "bg-red-500"
+                              }`}
+                              style={{ width: `${Math.max(5, Math.min(100, task.progress))}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
               {/* Section 1: Recent Articles */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">

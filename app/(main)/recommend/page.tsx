@@ -56,6 +56,13 @@ function RecommendInputContent() {
 
     // Generate unique recommendation ID
     const recId = "rec_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    try {
+      fetch("/api/user/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: recId, url: target, status: "processing", step: 1, progress: 20 }),
+      }).catch(() => {});
+    } catch {}
     router.push(`/recommend/${recId}?url=${encodeURIComponent(target)}`);
   };
 
@@ -68,11 +75,16 @@ function RecommendInputContent() {
       router.push(`/login?redirect=${encodeURIComponent(returnUrl)}`);
       return;
     }
-
     const recId = "rec_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    try {
+      fetch("/api/user/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: recId, url: presetUrl, status: "processing", step: 1, progress: 20 }),
+      }).catch(() => {});
+    } catch {}
     router.push(`/recommend/${recId}?url=${encodeURIComponent(presetUrl)}`);
   };
-
   return (
     <div className="w-full bg-background text-foreground flex flex-col selection:bg-primary selection:text-primary-foreground transition-colors duration-200">
       {/* Split Island Floating Header */}

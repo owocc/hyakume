@@ -91,6 +91,14 @@ export function AuthForm({ initialMode = "login" }: AuthFormProps) {
           return;
         }
 
+        try {
+          await authClient.signIn.email({
+            email: email.trim(),
+            password,
+            rememberMe: true,
+          });
+        } catch {}
+
         setSuccess("注册成功！正在进入应用...");
         setTimeout(() => {
           router.push(redirectUrl);

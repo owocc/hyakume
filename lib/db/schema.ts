@@ -132,6 +132,29 @@ export const articlesTable = pgTable(
   ]
 );
 
+export const tasksTable = pgTable(
+  "tasks",
+  {
+    id: text("id").primaryKey(),
+    user_id: text("user_id").notNull(),
+    url: text("url").notNull(),
+    domain: text("domain"),
+    status: text("status").default("processing").notNull(), // "processing" | "completed" | "failed"
+    step: integer("step").default(1).notNull(), // 1 to 5
+    step_name: text("step_name").default("页面渲染与快照截取").notNull(),
+    progress: integer("progress").default(20).notNull(), // 0 to 100
+    app_id: text("app_id"),
+    article_id: text("article_id"),
+    error: text("error"),
+    created_at: bigint("created_at", { mode: "number" }).notNull(),
+    updated_at: bigint("updated_at", { mode: "number" }).notNull(),
+  },
+  (table) => [
+    index("idx_tasks_user_id").on(table.user_id),
+    index("idx_tasks_status").on(table.status),
+    index("idx_tasks_created_at").on(table.created_at),
+  ]
+);
 export const appsRelations = relations(appsTable, ({ many }) => ({
   reviews: many(reviewsTable),
   subpages: many(subpagesTable),
@@ -169,5 +192,6 @@ export type SubpageSelect = typeof subpagesTable.$inferSelect;
 export type SubpageInsert = typeof subpagesTable.$inferInsert;
 export type ArticleSelect = typeof articlesTable.$inferSelect;
 export type ArticleInsert = typeof articlesTable.$inferInsert;
-
+export type TaskSelect = typeof tasksTable.$inferSelect;
+export type TaskInsert = typeof tasksTable.$inferInsert;
 export * from "./auth-schema";

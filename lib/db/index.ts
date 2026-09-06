@@ -4,9 +4,9 @@ import { drizzle as drizzleNeon, type NeonHttpDatabase } from "drizzle-orm/neon-
 import { neon, type NeonQueryFunction } from "@neondatabase/serverless";
 import { eq, or, and, ilike, desc, asc, inArray, type SQL } from "drizzle-orm";
 import pg from "pg";
-import type { AppItem, ReviewItem, CategoryItem, DeviceScreenshots, SubpageItem, ArticleItem } from "../types";
+import type { AppItem, ReviewItem, CategoryItem, DeviceScreenshots, SubpageItem, ArticleItem, PipelineTaskItem } from "../types";
 import * as schema from "./schema";
-import { appsTable, reviewsTable, categoriesTable, subpagesTable, articlesTable } from "./schema";
+import { appsTable, reviewsTable, categoriesTable, subpagesTable, articlesTable, tasksTable } from "./schema";
 
 const { Pool } = pg;
 
@@ -1237,4 +1237,137 @@ export async function getUserPublications(userId: string): Promise<{
     getUserSubpages(userId),
   ]);
   return { apps, articles, subpages };
+}
+
+export async function createTask(task: PipelineTaskItem): Promise<PipelineTaskItem> {
+  const database = getDb();
+  if (!database) throw new Error("Database not connected");
+  await ensureTablesInitialized();
+
+  const now = Date.now();
+  const values: schema.TaskInsert = {
+    id: task.id,
+    user_id: task.user_id,
+    url: task.url,
+    domain: task.domain || null,
+    status: task.status || "processing",
+    step: task.step || 1,
+    step_name: task.step_name || "页面渲染与快照截取",
+    progress: task.progress || 20,
+    app_id: task.app_id || null,
+    article_id: task.article_id || null,
+    error: task.error || null,
+    created_at: task.created_at || now,
+    updated_at: task.updated_at || now,
+  };
+
+  await (database as NeonHttpDatabase<typeof schema>)
+    .insert(tasksTable)
+    .values(values)
+    .onConflictDoUpdate({
+      target: tasksTable.id,
+      set: {
+        status: values.status,
+        step: values.step,
+        step_name: values.step_name,
+        progress: values.progress,
+        app_id: values.app_id,
+        article_id: values.article_id,
+        error: values.error,
+        updated_at: values.updated_at,
+      },
+    });
+
+  return task;
+}
+
+export async function updateTask(
+  id: string,
+  partial: Partial<PipelineTaskItem>
+): Promise<PipelineTaskItem | null> {
+  const database = getDb();
+  if (!database) return null;
+  await ensureTablesInitialized();
+
+  const setValues: Record<string, unknown> = {
+    updated_at: Date.now(),
+  };
+  if (partial.status !== undefined) setValues.status = partial.status;
+  if (partial.step !== undefined) setValues.step = partial.step;
+  if (partial.step_name !== undefined) setValues.step_name = partial.step_name;
+  if (partial.progress !== undefined) setValues.progress = partial.progress;
+  if (partial.app_id !== undefined) setValues.app_id = partial.app_id;
+  if (partial.article_id !== undefined) setValues.article_id = partial.article_id;
+  if (partial.error !== undefined) setValues.error = partial.error;
+
+  await (database as NeonHttpDatabase<typeof schema>)
+    .update(tasksTable)
+    .set(setValues)
+    .where(eq(tasksTable.id, id));
+
+  return getTaskById(id);
+}
+
+export async function getTaskById(id: string): Promise<PipelineTaskItem | null> {
+  const database = getDb();
+  if (!database) return null;
+  await ensureTablesInitialized();
+
+  const rows = await (database as NeonHttpDatabase<typeof schema>)
+    .select()
+    .from(tasksTable)
+    .where(eq(tasksTable.id, id))
+    .limit(1);
+
+  if (!rows || rows.length === 0) return null;
+  const r = rows[0];
+  return {
+    id: r.id,
+    user_id: r.user_id,
+    url: r.url,
+    domain: r.domain || undefined,
+    status: r.status as "processing" | "completed" | "failed",
+    step: Number(r.step),
+    step_name: r.step_name,
+    progress: Number(r.progress),
+    app_id: r.app_id || undefined,
+    article_id: r.article_id || undefined,
+    error: r.error || undefined,
+    created_at: Number(r.created_at),
+    updated_at: Number(r.updated_at),
+  };
+}
+
+export async function getUserTasks(userId: string): Promise<PipelineTaskItem[]> {
+  try {
+    const database = getDb();
+    if (!database) return [];
+    await ensureTablesInitialized();
+
+    const rows = await (database as NeonHttpDatabase<typeof schema>)
+      .select()
+      .from(tasksTable)
+      .where(eq(tasksTable.user_id, userId))
+      .orderBy(desc(tasksTable.created_at))
+      .limit(30);
+
+    return rows.map((r) => ({
+      id: r.id,
+      user_id: r.user_id,
+      url: r.url,
+      domain: r.domain || undefined,
+      status: r.status as "processing" | "completed" | "failed",
+      step: Number(r.step),
+      step_name: r.step_name,
+      progress: Number(r.progress),
+      app_id: r.app_id || undefined,
+      article_id: r.article_id || undefined,
+      error: r.error || undefined,
+      created_at: Number(r.created_at),
+      updated_at: Number(r.updated_at),
+    }));
+  } catch (err) {
+    console.error("Error in getUserTasks:", err);
+    return [];
+  }
 }

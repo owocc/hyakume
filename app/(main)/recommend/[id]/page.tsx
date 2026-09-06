@@ -211,7 +211,7 @@ function RecommendDetailContent() {
         const res = await fetch("/api/analyze", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url: targetUrl }),
+          body: JSON.stringify({ url: targetUrl, taskId: id }),
         });
 
         if (res.status === 401) {

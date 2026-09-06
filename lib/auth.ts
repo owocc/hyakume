@@ -22,6 +22,7 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
+    autoSignIn: true,
   },
   socialProviders: {
     ...(getEnvVar("GITHUB_CLIENT_ID") && getEnvVar("GITHUB_CLIENT_SECRET")

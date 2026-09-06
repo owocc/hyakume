@@ -62,3 +62,23 @@ CREATE INDEX IF NOT EXISTS idx_apps_featured ON apps(featured);
 CREATE INDEX IF NOT EXISTS idx_apps_trending ON apps(trending);
 CREATE INDEX IF NOT EXISTS idx_apps_user_id ON apps(user_id);
 CREATE INDEX IF NOT EXISTS idx_reviews_app_id ON reviews(app_id);
+
+CREATE TABLE IF NOT EXISTS tasks (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  url TEXT NOT NULL,
+  domain TEXT,
+  status TEXT DEFAULT 'processing' NOT NULL,
+  step INTEGER DEFAULT 1 NOT NULL,
+  step_name TEXT DEFAULT '页面渲染与快照截取' NOT NULL,
+  progress INTEGER DEFAULT 20 NOT NULL,
+  app_id TEXT,
+  article_id TEXT,
+  error TEXT,
+  created_at BIGINT NOT NULL,
+  updated_at BIGINT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_tasks_user_id ON tasks(user_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
+CREATE INDEX IF NOT EXISTS idx_tasks_created_at ON tasks(created_at);

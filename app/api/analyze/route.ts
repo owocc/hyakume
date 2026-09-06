@@ -9,11 +9,14 @@ import {
   insertArticle,
   getArticlesByAppId,
   getSubpagesByAppId,
+  createTask,
+  updateTask,
 } from "@/lib/db";
 import type { SubpageItem, ArticleItem } from "@/lib/types";
 import { auth } from "@/lib/auth";
 
 export async function POST(request: Request) {
+  let currentTaskId: string | undefined;
   try {
     const session = await auth.api.getSession({ headers: request.headers });
     if (!session || !session.user) {
@@ -23,9 +26,12 @@ export async function POST(request: Request) {
       );
     }
     const userId = session.user.id;
-    const body = (await request.json()) as { url?: string };
+    const body = (await request.json()) as { url?: string; taskId?: string };
     const rawUrl = body.url?.trim();
-
+    const taskId =
+      body.taskId ||
+      "rec_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    currentTaskId = taskId;
     if (!rawUrl) {
       return Response.json(
         { success: false, error: "请提供有效的网址 (URL)" },
@@ -42,7 +48,19 @@ export async function POST(request: Request) {
     const pathname = parsed.pathname;
     const isSubpage = Boolean(pathname && pathname !== "/" && pathname.length > 1);
 
-    // Check if domain is already recorded
+    // Record or update task progress in DB
+    await createTask({
+      id: taskId,
+      user_id: userId,
+      url: target,
+      domain: parsed.hostname,
+      status: "processing",
+      step: 1,
+      step_name: "页面渲染与多端快照截取",
+      progress: 20,
+      created_at: Date.now(),
+      updated_at: Date.now(),
+    });
     const existingApp = await getAppByDomain(target);
     if (existingApp) {
       // Case A: Domain already recorded in DB, and user provided a subpage (/xxx)
@@ -117,12 +135,19 @@ export async function POST(request: Request) {
         // Refresh app with newly associated subpages and articles
         const refreshedApp = await getAppById(existingApp.id);
 
+        await updateTask(taskId, {
+          status: "completed",
+          step: 5,
+          step_name: "子页面快照与文章生成完成",
+          progress: 100,
+          app_id: existingApp.id,
+          article_id: savedArticle?.id,
+        });
+
         return Response.json({
           success: true,
+          taskId,
           alreadyExists: true,
-          isSubpage: true,
-          skippedMainScreenshot: true,
-          app: refreshedApp || existingApp,
           subpage: savedSubpage,
           article: savedArticle,
           crawl: {
@@ -192,6 +217,15 @@ export async function POST(request: Request) {
       };
       await insertArticle(userArticle);
 
+      await updateTask(taskId, {
+        status: "completed",
+        step: 5,
+        step_name: "应用信息更新与专属文章归属完成",
+        progress: 100,
+        app_id: existingApp.id,
+        article_id: userArticle.id,
+      });
+
       const [refreshedApp, existingSubpages] = await Promise.all([
         getAppById(existingApp.id),
         getSubpagesByAppId(existingApp.id),
@@ -199,6 +233,7 @@ export async function POST(request: Request) {
 
       return Response.json({
         success: true,
+        taskId,
         alreadyExists: true,
         isSubpage: false,
         app: refreshedApp || existingApp,
@@ -234,6 +269,12 @@ export async function POST(request: Request) {
     steps[0].status = "completed";
     steps[1].status = "completed";
 
+    await updateTask(taskId, {
+      step: 3,
+      step_name: "多端截图存储与文本提取完成",
+      progress: 55,
+    });
+
     // 2. Cover image report
     steps[2].status = "completed";
 
@@ -241,6 +282,11 @@ export async function POST(request: Request) {
     const appData = await summarizeWithAgent(crawlResult);
     steps[3].status = "completed";
 
+    await updateTask(taskId, {
+      step: 4,
+      step_name: "AI Agent 深度解析与文章生成",
+      progress: 80,
+    });
     // 4. Save to database
     appData.user_id = userId;
     const savedApp = await insertApp({
@@ -292,8 +338,18 @@ export async function POST(request: Request) {
     steps[4].status = "completed";
     const refreshedApp = (await getAppById(savedApp.id)) || savedApp;
 
+    await updateTask(taskId, {
+      status: "completed",
+      step: 5,
+      step_name: "推荐收录与文章归属完成",
+      progress: 100,
+      app_id: savedApp.id,
+      article_id: createdArticle?.id,
+    });
+
     return Response.json({
       success: true,
+      taskId,
       app: refreshedApp,
       subpage: createdSubpage,
       article: createdArticle,
@@ -310,6 +366,16 @@ export async function POST(request: Request) {
     });
   } catch (err) {
     console.error("Analysis pipeline error:", err);
+    try {
+      if (currentTaskId) {
+        await updateTask(currentTaskId, {
+          status: "failed",
+          step_name: "分析处理异常",
+          error: err instanceof Error ? err.message : "分析失败",
+          progress: 100,
+        });
+      }
+    } catch {}
     return Response.json(
       {
         success: false,

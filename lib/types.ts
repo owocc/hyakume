@@ -115,6 +115,21 @@ export interface ArticleItem {
   app?: AppItem;
 }
 
+export interface PipelineTaskItem {
+  id: string;
+  user_id: string;
+  url: string;
+  domain?: string;
+  status: "processing" | "completed" | "failed";
+  step: number;
+  step_name: string;
+  progress: number;
+  app_id?: string;
+  article_id?: string;
+  error?: string;
+  created_at: number;
+  updated_at: number;
+}
 
 export interface AnalyzeResult {
   name: string;
