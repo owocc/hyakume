@@ -641,6 +641,28 @@ export async function deleteApp(id: string): Promise<boolean> {
   }
 }
 
+export async function deleteArticle(id: string, userId?: string): Promise<boolean> {
+  try {
+    const database = getDb();
+    if (!database) return false;
+    await ensureTablesInitialized();
+
+    let query = (database as NeonHttpDatabase<typeof schema>)
+      .delete(articlesTable)
+      .where(
+        userId
+          ? and(eq(articlesTable.id, id), eq(articlesTable.user_id, userId))
+          : eq(articlesTable.id, id)
+      );
+
+    await query;
+    return true;
+  } catch (err) {
+    console.error("Error in deleteArticle:", err);
+    return false;
+  }
+}
+
 export async function insertApp(app: AppItem): Promise<AppItem> {
   const existingApp = await getAppByDomain(app.url);
   if (existingApp && existingApp.id !== app.id) {

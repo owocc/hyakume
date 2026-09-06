@@ -198,6 +198,47 @@ export function isValidXUrl(url?: string | null): boolean {
   const invalid = ["home", "explore", "search", "intent", "login", "signup", "settings", "i"];
   return !invalid.includes(handle.toLowerCase().split("/")[0]);
 }
+export type TargetKind = "github_profile" | "github_project" | "web_app";
+
+export function detectTargetKind(urlStr: string): {
+  kind: TargetKind;
+  githubUsername?: string;
+  githubRepo?: { owner: string; repo: string };
+} {
+  try {
+    const parsed = new URL(urlStr);
+    if (!parsed.hostname.includes("github.com")) {
+      return { kind: "web_app" };
+    }
+
+    const path = parsed.pathname.replace(/\/+$/, "");
+    const parts = path.split("/").filter(Boolean);
+    const reserved = [
+      "login", "signup", "features", "pricing", "explore", "topics",
+      "trending", "collections", "events", "enterprise", "marketplace",
+      "about", "contact", "settings", "search", "organizations", "orgs",
+      "stars", "notifications", "dashboard"
+    ];
+
+    if (parts.length === 1 && !reserved.includes(parts[0].toLowerCase())) {
+      return {
+        kind: "github_profile",
+        githubUsername: parts[0],
+      };
+    }
+
+    if (parts.length >= 2 && !reserved.includes(parts[0].toLowerCase())) {
+      return {
+        kind: "github_project",
+        githubRepo: { owner: parts[0], repo: parts[1] },
+      };
+    }
+
+    return { kind: "web_app" };
+  } catch {
+    return { kind: "web_app" };
+  }
+}
 
 export interface SubpageAnalysisResult {
   is_meaningful: boolean;
@@ -210,6 +251,7 @@ export interface SubpageAnalysisResult {
   x_url?: string;
   author: string;
 }
+
 export function generateFallbackArticle(
   crawl: CrawlResult,
   parentApp?: AppItem
@@ -218,37 +260,37 @@ export function generateFallbackArticle(
   const appName = parentApp?.name || cleanTitle(crawl.title, parsedUrl.hostname);
   const pageTitle = crawl.title || appName;
   const description = crawl.description || `${appName} 是一款优秀的现代网络服务与生产力工具。`;
-  const isTargetGithub = parsedUrl.hostname.includes("github.com");
+  const targetKind = detectTargetKind(crawl.url);
   const isTargetX = parsedUrl.hostname.includes("x.com") || parsedUrl.hostname.includes("twitter.com");
-  const githubUrl = isTargetGithub && isValidGithubRepoUrl(crawl.url) ? crawl.url : undefined;
   const xUrl = isTargetX && isValidXUrl(crawl.url) ? crawl.url : undefined;
   const isSubpage = parsedUrl.pathname !== "/" && parsedUrl.pathname !== "";
 
+  let githubUrl: string | undefined;
   let label = "核心功能";
   let tag = "精选推荐";
-  if (isTargetGithub) {
-    label = "GitHub 仓库";
+  let articleTitle = `重塑工作流：${appName} 的核心优势与全景实践`;
+
+  if (targetKind.kind === "github_profile") {
+    githubUrl = `https://github.com/${targetKind.githubUsername}`;
+    label = "开发者主页";
     tag = "开源解读";
+    articleTitle = `开源极客画像：${targetKind.githubUsername || appName} 与 TA 的技术世界`;
+  } else if (targetKind.kind === "github_project") {
+    githubUrl = `https://github.com/${targetKind.githubRepo?.owner}/${targetKind.githubRepo?.repo}`;
+    label = "开源仓库";
+    tag = "开源解读";
+    articleTitle = `极速探秘 ${targetKind.githubRepo?.repo || appName}：现代化架构与核心实现`;
   } else if (isTargetX) {
     label = "社交动态";
     tag = "社交热议";
+    articleTitle = `X 社区热议：${appName} 体验反响与开发者观点盘点`;
   } else if (parsedUrl.pathname.includes("doc") || parsedUrl.pathname.includes("guide") || parsedUrl.pathname.includes("api")) {
     label = "技术文档";
     tag = "深度评测";
-  } else if (parsedUrl.pathname.includes("price") || parsedUrl.pathname.includes("plan")) {
-    label = "定价方案";
-    tag = "功能解析";
+    articleTitle = `技术解析：${appName} 架构剖析与最佳实践`;
   } else if (isSubpage) {
     label = "特色页面";
     tag = "深度评测";
-  }
-
-  let articleTitle = `重塑工作流：${appName} 的核心优势与全景实践`;
-  if (tag === "开源解读") {
-    articleTitle = `深度探秘 ${appName} 开源生态与工程实践`;
-  } else if (tag === "社交热议") {
-    articleTitle = `X 社区热议：${appName} 体验反响与开发者观点盘点`;
-  } else if (isSubpage) {
     articleTitle = `深入剖析 ${appName}：${pageTitle} 与实用价值解读`;
   }
 
@@ -317,22 +359,87 @@ export async function analyzeAndGenerateArticle(
   const appName = parentApp?.name || cleanTitle(crawl.title, parsedUrl.hostname);
   const fallback = generateFallbackArticle(crawl, parentApp);
 
-  const systemPrompt = `你是一位资深科技媒体主编、Web 产品体验官与架构师。
-你的任务是对传入的网页内容进行客观中立、有洞察力的深度研判，产出高质量结构化推荐内容。
+  const targetKind = detectTargetKind(crawl.url);
+  let systemPrompt = "";
+  let userContent = "";
+
+  if (targetKind.kind === "github_profile") {
+    const username = targetKind.githubUsername || appName;
+    systemPrompt = `你是一位资深开源生态猎手与开发者画像分析师。
+你的任务是对传入的 GitHub 个人主页（Developer Profile）进行深度分析并输出结构化推荐评测内容。
+必须以纯 JSON 格式输出，不要包含任何 markdown 代码块标记，不要包含 \`\`\`json 前缀。
+
+研判重点：
+1. 开发者画像与专业背景：分析其 Bio、主要贡献领域、开源活跃度。
+2. 核心代表作与开源项目：从页面信息中提取其最具代表性或高星的开源项目，解析其技术价值。
+3. 技术栈与工程哲学：提炼其擅长的主力编程语言、框架与技术理念（如 Rust、TypeScript、Go 等）。
+4. 为什么值得 Follow：为其他开发者总结关注该开发者的价值（如前沿技术探索、优质代码示范、开源工具生态）。
+
+JSON 字段定义如下：
+{
+  "is_meaningful": true,
+  "label": "开发者主页",
+  "tag": "开源解读",
+  "title": "深度推荐文章标题（例如：开源极客画像：${username} 与 TA 的硬核开发世界）",
+  "summary": "80~150字核心导读摘要，概述该开发者的核心技术方向与代表作",
+  "github_url": "https://github.com/${username}",
+  "x_url": "如果开发者主页提供了其 X/Twitter 链接则填写，否则输出空字符串 \"\"",
+  "content": "完整的 Markdown 格式深度推荐文章，结构需包含：# 👨‍💻 开发者全景画像、## 🌟 核心开源贡献与代表项目、## 🛠️ 主力技术栈与工程哲学、## 💡 为什么值得关注 / Follow 指南、## 🎯 总结与个人主页速览",
+  "author": "AppStore 开发者生态观察"
+}`;
+    userContent = `开发者 GitHub: ${username}
+目标主页网址: ${crawl.url}
+页面标题: ${crawl.title}
+个人简介: ${crawl.description}
+主页正文节选:
+${crawl.text.slice(0, 1600)}`;
+  } else if (targetKind.kind === "github_project") {
+    const repoName = targetKind.githubRepo ? `${targetKind.githubRepo.owner}/${targetKind.githubRepo.repo}` : appName;
+    systemPrompt = `你是一位硬核开源技术架构师与代码审查官。
+你的任务是对传入的 GitHub 开源项目仓库（Repository）进行深度研判并输出结构化推荐评测内容。
+必须以纯 JSON 格式输出，不要包含任何 markdown 代码块标记，不要包含 \`\`\`json 前缀。
+
+研判重点：
+1. 项目核心痛点与定位：该仓库解决了什么痛点？相比同类工具有何不可替代的优势？
+2. 架构设计与技术亮点：核心技术选型、创新设计、模块化特性。
+3. 快速上手与典型用例：简明扼要的安装、配置或核心使用范式。
+4. 社区活跃度与生态价值：Star 趋势、许可证、适用团队与开发者群体。
+
+JSON 字段定义如下：
+{
+  "is_meaningful": true,
+  "label": "开源仓库",
+  "tag": "开源解读",
+  "title": "深度推荐文章标题（例如：极速探秘 ${targetKind.githubRepo?.repo || repoName}：现代化架构与核心实现）",
+  "summary": "80~150字核心导读摘要，高度凝练项目价值与技术特色",
+  "github_url": "https://github.com/${repoName}",
+  "x_url": "如果 README 中明确提供了官方 Twitter/X 链接则填写，否则输出空字符串 \"\"",
+  "content": "完整的 Markdown 格式深度推荐文章，结构需包含：# 🌟 项目核心亮点与解决痛点、## 🛠️ 架构设计与关键特性解析、## 🚀 快速上手与集成指南、## 💻 GitHub 生态与 Star 价值、## 🎯 综合研判与适用场景",
+  "author": "AppStore 开源实验室"
+}`;
+    userContent = `开源项目: ${repoName}
+目标仓库网址: ${crawl.url}
+页面标题: ${crawl.title}
+仓库描述: ${crawl.description}
+仓库正文/README节选:
+${crawl.text.slice(0, 1600)}`;
+  } else {
+    systemPrompt = `你是一位资深科技媒体主编、Web 产品体验官与架构师。
+你的任务是对传入的 Web 应用/SaaS 工具进行客观中立、有洞察力的深度研判，产出高质量结构化推荐内容。
 必须以纯 JSON 格式输出，不要包含任何 markdown 代码块标记，不要包含 \`\`\`json 前缀。
 
 ⚠️ 特别研判原则（非常重要）：
 1. 绝大多数 Web 应用、SaaS 平台（如 Vercel、Figma、Linear 等）是商业服务或闭源工具，绝对不要主动臆造或强加假设为开源项目！
-2. 只有当目标页面本身明确就是开源仓库（如 GitHub 仓库页），或正文有极其明确的证据表明该产品本身开源且提供了其官方代码仓库时，才在 "github_url" 填写真实的 "https://github.com/{owner}/{repo}"。
+2. 只有当正文有极其明确的证据表明该产品本身开源且提供了其官方代码仓库时，才在 "github_url" 填写真实的 "https://github.com/{owner}/{repo}"。
 3. 严禁把应用自身的官网链接（如 vercel.com）误填入 github_url！若不是开源仓库，必须输出空字符串 ""。
 4. 同理，只有确认该应用官方 X/Twitter 账号时才填写 "x_url"，否则必须输出空字符串 ""。
 5. 文章内容 ("content") 必须根据产品实际属性（SaaS 平台、设计协同、在线工具、AI 服务、基础设施等）量体裁衣，不要对非开源产品生搬硬套插入 GitHub 开源章节。
 
 JSON 字段定义如下：
 {
-  "is_meaningful": true, // 布尔值：若页面有实质内容则为 true；若是纯空白页、404、无实质内容则为 false
-  "label": "2~6字精准页面标注（如: 核心功能、云端部署、协同设计、技术文档、社交动态，非开源切勿标开源）",
-  "tag": "推荐类型（只能从 [\"精选推荐\", \"深度评测\", \"功能解析\", \"开源解读\", \"社交热议\"] 中选一个，非开源项目切勿选开源解读）",
+  "is_meaningful": true,
+  "label": "2~6字精准页面标注（如: 核心功能、云端部署、协同设计、技术文档、在线工具，非开源切勿标开源）",
+  "tag": "推荐类型（只能从 [\"精选推荐\", \"深度评测\", \"功能解析\"] 中选一个）",
   "title": "深度推荐文章标题（生动、有力，针对该产品特色命名）",
   "summary": "80~150字核心导读摘要",
   "github_url": "仅当该项目本身是开源项目且有官方代码仓库时填写完整 GitHub 链接，否则必须输出空字符串 \"\"",
@@ -340,8 +447,7 @@ JSON 字段定义如下：
   "content": "完整的 Markdown 格式深度推荐文章，根据产品特性自由灵活布局章节（建议包含：# 🌟 核心亮点与产品全貌、## 🛠️ 核心架构与功能解析、## 💡 深度上手与实用技巧指南、## 🎯 综合研判与适用人群，非开源项目切勿包含 GitHub 开源章节）",
   "author": "AppStore 精选编辑部"
 }`;
-
-  const userContent = `应用名称: ${appName}
+    userContent = `应用名称: ${appName}
 主站地址: ${parentApp?.url || crawl.url}
 当前分析目标页面: ${crawl.url}
 页面标题: ${crawl.title}
@@ -349,6 +455,7 @@ JSON 字段定义如下：
 目标网址: ${crawl.url}
 页面正文节选:
 ${crawl.text.slice(0, 1600)}`;
+  }
 
   const aiConfig = resolveAiConfig(env as Record<string, unknown>);
   let rawText = "";
@@ -422,10 +529,19 @@ ${crawl.text.slice(0, 1600)}`;
 export async function summarizeWithAgent(crawl: CrawlResult): Promise<AppItem> {
   const env = await getCloudflareEnv();
   const parsedUrl = new URL(crawl.url);
-  const fallbackName = cleanTitle(crawl.title, parsedUrl.hostname);
+  const targetKind = detectTargetKind(crawl.url);
+  let fallbackName = cleanTitle(crawl.title, parsedUrl.hostname);
+  if (targetKind.kind === "github_profile" && targetKind.githubUsername) {
+    fallbackName = targetKind.githubUsername;
+  } else if (targetKind.kind === "github_project" && targetKind.githubRepo) {
+    fallbackName = targetKind.githubRepo.repo;
+  }
   const fallbackCategories = inferCategories(`${crawl.title} ${crawl.description} ${crawl.text}`);
 
   let appName = fallbackName;
+  let developer = targetKind.kind === "github_project"
+    ? (targetKind.githubRepo?.owner || appName)
+    : (targetKind.kind === "github_profile" ? (targetKind.githubUsername || appName) : "官方团队");
   let tagline = crawl.description ? crawl.description.slice(0, 40) : `${fallbackName}，开启智能便捷的 Web 新体验`;
   let categories = fallbackCategories;
   let description = "";
@@ -446,6 +562,7 @@ export async function summarizeWithAgent(crawl: CrawlResult): Promise<AppItem> {
 }`;
 
   const userContent = `网址: ${crawl.url}
+目标类型: ${targetKind.kind === "github_profile" ? "GitHub 开发者个人主页" : targetKind.kind === "github_project" ? "GitHub 开源仓库" : "Web 应用/SaaS 工具"}
 标题: ${crawl.title}
 描述: ${crawl.description}
 页面内容节选: ${crawl.text.slice(0, 1000)}`;

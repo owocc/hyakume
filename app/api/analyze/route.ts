@@ -26,7 +26,8 @@ export async function POST(request: Request) {
       );
     }
     const userId = session.user.id;
-    const body = (await request.json()) as { url?: string; taskId?: string };
+    const body = (await request.json()) as { url?: string; taskId?: string; writeArticle?: boolean };
+    const writeArticle = body.writeArticle !== false;
     const rawUrl = body.url?.trim();
     const taskId =
       body.taskId ||
@@ -189,42 +190,54 @@ export async function POST(request: Request) {
         updated_at: Date.now(),
       });
 
-      // Generate and attribute a fresh recommendation article to the submitting user
-      const articleId = "art_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-      const userArticle: ArticleItem = {
-        id: articleId,
-        app_id: existingApp.id,
-        slug: `${existingApp.id}-${Date.now().toString(36)}`,
-        user_id: userId,
-        title: appData.articles?.[0]?.title || `深度解析与精选推荐：${existingApp.name}`,
-        summary: appData.articles?.[0]?.summary || appData.description,
-        tag: appData.category || "精选推荐",
-        content: appData.articles?.[0]?.content || appData.description,
-        cover_image: crawlResult.screenshots[0] || crawlResult.coverUrl || existingApp.cover_url,
-        github_url: isValidGithubRepoUrl(appData.articles?.[0]?.github_url)
-          ? appData.articles![0].github_url
-          : (isValidGithubRepoUrl(crawlResult.githubUrl) ? crawlResult.githubUrl : undefined),
-        x_url: isValidXUrl(appData.articles?.[0]?.x_url)
-          ? appData.articles![0].x_url
-          : (isValidXUrl(crawlResult.xUrl) ? crawlResult.xUrl : undefined),
-        source_url: target,
-        author: session.user.name || "精选推荐官",
-        read_time: "3 分钟阅读",
-        views: 0,
-        likes: 0,
-        created_at: Date.now(),
-        updated_at: Date.now(),
-      };
-      await insertArticle(userArticle);
+      let userArticle: ArticleItem | null = null;
 
-      await updateTask(taskId, {
-        status: "completed",
-        step: 5,
-        step_name: "应用信息更新与专属文章归属完成",
-        progress: 100,
-        app_id: existingApp.id,
-        article_id: userArticle.id,
-      });
+      if (writeArticle) {
+        // Generate and attribute a fresh recommendation article to the submitting user
+        const articleId = "art_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+        userArticle = {
+          id: articleId,
+          app_id: existingApp.id,
+          slug: `${existingApp.id}-${Date.now().toString(36)}`,
+          user_id: userId,
+          title: appData.articles?.[0]?.title || `深度解析与精选推荐：${existingApp.name}`,
+          summary: appData.articles?.[0]?.summary || appData.description,
+          tag: appData.category || "精选推荐",
+          content: appData.articles?.[0]?.content || appData.description,
+          cover_image: crawlResult.screenshots[0] || crawlResult.coverUrl || existingApp.cover_url,
+          github_url: isValidGithubRepoUrl(appData.articles?.[0]?.github_url)
+            ? appData.articles![0].github_url
+            : (isValidGithubRepoUrl(crawlResult.githubUrl) ? crawlResult.githubUrl : undefined),
+          x_url: isValidXUrl(appData.articles?.[0]?.x_url)
+            ? appData.articles![0].x_url
+            : (isValidXUrl(crawlResult.xUrl) ? crawlResult.xUrl : undefined),
+          source_url: target,
+          author: session.user.name || "精选推荐官",
+          read_time: "3 分钟阅读",
+          views: 0,
+          likes: 0,
+          created_at: Date.now(),
+          updated_at: Date.now(),
+        };
+        await insertArticle(userArticle);
+
+        await updateTask(taskId, {
+          status: "completed",
+          step: 5,
+          step_name: "应用信息更新与专属文章归属完成",
+          progress: 100,
+          app_id: existingApp.id,
+          article_id: userArticle.id,
+        });
+      } else {
+        await updateTask(taskId, {
+          status: "completed",
+          step: 5,
+          step_name: "应用信息已刷新 (跳过生成重复文章)",
+          progress: 100,
+          app_id: existingApp.id,
+        });
+      }
 
       const [refreshedApp, existingSubpages] = await Promise.all([
         getAppById(existingApp.id),
@@ -250,8 +263,14 @@ export async function POST(request: Request) {
           { step: 1, name: "匹配已有公共域名记录，触发 AI 重新深度抓取", status: "completed" },
           { step: 2, name: "多端渲染并自动更新应用信息", status: "completed" },
           { step: 3, name: "AI 总结更新应用功能特色，公共数据已刷新", status: "completed" },
-          { step: 4, name: `为您生成专属归属推荐文章《${userArticle.title}》`, status: "completed" },
-          { step: 5, name: "内容更新与文章归属完成", status: "completed" },
+          {
+            step: 4,
+            name: writeArticle && userArticle
+              ? `为您生成专属归属推荐文章《${userArticle.title}》`
+              : "已更新应用库基础数据 (已跳过生成重复文章)",
+            status: "completed",
+          },
+          { step: 5, name: "内容更新流程完成", status: "completed" },
         ],
       });
     }

@@ -27,6 +27,7 @@ import {
   Clock,
   RotateCcw,
   Layers,
+  Trash2,
 } from "lucide-react";
 import type { AppItem, ArticleItem, SubpageItem, PipelineTaskItem } from "@/lib/types";
 import {
@@ -85,7 +86,31 @@ function DashboardContent() {
   const [data, setData] = useState<PublicationsResponse | null>(null);
   const [tasks, setTasks] = useState<PipelineTaskItem[]>([]);
   const [tasksLoading, setTasksLoading] = useState(true);
-  // Redirect to login if unauthenticated
+  const [deletingArticleId, setDeletingArticleId] = useState<string | null>(null);
+
+  const handleDeleteArticle = async (e: React.MouseEvent, articleId: string, articleTitle: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!window.confirm(`确定要删除推荐文章《${articleTitle}》吗？此操作不可撤销。`)) {
+      return;
+    }
+
+    try {
+      setDeletingArticleId(articleId);
+      const res = await fetch(`/api/articles/${articleId}`, { method: "DELETE" });
+      const json = (await res.json()) as { success?: boolean; error?: string };
+      if (json.success) {
+        fetchPublications(scope);
+      } else {
+        alert(json.error || "删除失败");
+      }
+    } catch {
+      alert("网络请求异常，删除失败");
+    } finally {
+      setDeletingArticleId(null);
+    }
+  };
   useEffect(() => {
     if (!sessionLoading && !session?.user) {
       router.push(`/login?redirect=${encodeURIComponent("/dashboard")}`);
@@ -992,6 +1017,16 @@ function DashboardContent() {
                             >
                               <AppWindow className="w-4 h-4" />
                             </Link>
+
+                            <button
+                              type="button"
+                              onClick={(e) => handleDeleteArticle(e, art.id, art.title)}
+                              disabled={deletingArticleId === art.id}
+                              className="p-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-400 hover:text-red-500 hover:border-red-200 dark:hover:border-red-900/60 hover:bg-red-50 dark:hover:bg-red-950/30 transition cursor-pointer disabled:opacity-50"
+                              title="删除文章"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -1042,6 +1077,16 @@ function DashboardContent() {
                           <span>阅读文章</span>
                           <ArrowRight className="w-3.5 h-3.5" />
                         </Link>
+
+                        <button
+                          type="button"
+                          onClick={(e) => handleDeleteArticle(e, art.id, art.title)}
+                          disabled={deletingArticleId === art.id}
+                          className="p-2 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-400 hover:text-red-500 hover:border-red-200 dark:hover:border-red-900/60 hover:bg-red-50 dark:hover:bg-red-950/30 transition cursor-pointer disabled:opacity-50"
+                          title="删除文章"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </div>
                   ))}

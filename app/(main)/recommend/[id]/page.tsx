@@ -183,6 +183,8 @@ function RecommendDetailContent() {
 
   const id = (params?.id as string) || "rec_task";
   const targetUrl = searchParams.get("url") || "https://linear.app";
+  const writeArticle = searchParams.get("writeArticle") !== "false";
+
   // Pipeline state
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [userSelectedStep, setUserSelectedStep] = useState<number | null>(null);
@@ -211,9 +213,8 @@ function RecommendDetailContent() {
         const res = await fetch("/api/analyze", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url: targetUrl, taskId: id }),
+          body: JSON.stringify({ url: targetUrl, taskId: id, writeArticle }),
         });
-
         if (res.status === 401) {
           setErrorMsg("发布需要注册并登录账号，正在为您跳转到登录页面...");
           setIsCompleted(true);
