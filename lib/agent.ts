@@ -179,6 +179,26 @@ async function callOpenAICompatible(options: {
   return data.choices?.[0]?.message?.content?.trim() || "";
 }
 
+export function isValidGithubRepoUrl(url?: string | null): boolean {
+  if (!url || typeof url !== "string") return false;
+  const trimmed = url.trim().replace(/\/+$/, "");
+  const match = trimmed.match(/^https?:\/\/(?:www\.)?github\.com\/([a-zA-Z0-9_.-]+)\/([a-zA-Z0-9_.-]+)$/i);
+  if (!match) return false;
+  const [_, owner, repo] = match;
+  const invalid = ["login", "signup", "features", "pricing", "explore", "settings", "marketplace", "about", "contact"];
+  return !invalid.includes(owner.toLowerCase()) && !invalid.includes(repo.toLowerCase());
+}
+
+export function isValidXUrl(url?: string | null): boolean {
+  if (!url || typeof url !== "string") return false;
+  const trimmed = url.trim().replace(/\/+$/, "");
+  const match = trimmed.match(/^https?:\/\/(?:www\.)?(?:twitter\.com|x\.com)\/([a-zA-Z0-9_]+(?:\/status\/\d+)?)$/i);
+  if (!match) return false;
+  const [_, handle] = match;
+  const invalid = ["home", "explore", "search", "intent", "login", "signup", "settings", "i"];
+  return !invalid.includes(handle.toLowerCase().split("/")[0]);
+}
+
 export interface SubpageAnalysisResult {
   is_meaningful: boolean;
   label: string;
@@ -190,7 +210,6 @@ export interface SubpageAnalysisResult {
   x_url?: string;
   author: string;
 }
-
 export function generateFallbackArticle(
   crawl: CrawlResult,
   parentApp?: AppItem
@@ -199,16 +218,18 @@ export function generateFallbackArticle(
   const appName = parentApp?.name || cleanTitle(crawl.title, parsedUrl.hostname);
   const pageTitle = crawl.title || appName;
   const description = crawl.description || `${appName} 是一款优秀的现代网络服务与生产力工具。`;
-  const githubUrl = crawl.githubUrl || (crawl.url.includes("github.com") ? crawl.url : undefined);
-  const xUrl = crawl.xUrl || (crawl.url.includes("x.com") || crawl.url.includes("twitter.com") ? crawl.url : undefined);
+  const isTargetGithub = parsedUrl.hostname.includes("github.com");
+  const isTargetX = parsedUrl.hostname.includes("x.com") || parsedUrl.hostname.includes("twitter.com");
+  const githubUrl = isTargetGithub && isValidGithubRepoUrl(crawl.url) ? crawl.url : undefined;
+  const xUrl = isTargetX && isValidXUrl(crawl.url) ? crawl.url : undefined;
   const isSubpage = parsedUrl.pathname !== "/" && parsedUrl.pathname !== "";
 
   let label = "核心功能";
   let tag = "精选推荐";
-  if (githubUrl || crawl.url.includes("github.com")) {
+  if (isTargetGithub) {
     label = "GitHub 仓库";
     tag = "开源解读";
-  } else if (xUrl || crawl.url.includes("x.com") || crawl.url.includes("twitter.com")) {
+  } else if (isTargetX) {
     label = "社交动态";
     tag = "社交热议";
   } else if (parsedUrl.pathname.includes("doc") || parsedUrl.pathname.includes("guide") || parsedUrl.pathname.includes("api")) {
@@ -233,13 +254,13 @@ export function generateFallbackArticle(
 
   const summary = `本篇推荐为您全方位深度剖析 ${appName} 的核心技术架构、应用场景与实际使用心得，帮助您发掘更高效的现代化 Web 工作流。`;
 
-  const githubSection = githubUrl
-    ? `### 📦 关联代码仓库\n- **GitHub 地址**: [${githubUrl}](${githubUrl})\n- **生态价值**: 该项目在 GitHub 上受到众多开发者关注，代码架构清晰，模块化设计便于二次集成与协作维护。\n- **技术亮点**: 遵循现代前端与云原生规范，提供开放的扩展能力与丰富的接口文档。`
-    : `### 📦 开源与生态建设\n- **开放架构**: ${appName} 积极拥抱现代 Web 标准与开放协议，支持与主流开发工具链及自动化脚本无缝协同。\n- **社区集成**: 开发者可基于标准 Webhook 与 API 进行深度定制，打造专属的自动化流程。`;
+  const optionalGhSection = githubUrl
+    ? `\n\n---\n\n## 💻 GitHub 开源生态与代码仓库\n- **GitHub 地址**: [${githubUrl}](${githubUrl})\n- **生态价值**: 该项目在 GitHub 上受到众多开发者关注，代码架构清晰，模块化设计便于二次集成与协作维护。\n- **技术亮点**: 遵循现代开源规范与云原生标准，提供开放的扩展能力与完备的文档。`
+    : "";
 
-  const xSection = xUrl
-    ? `### 💬 X (Twitter) 动态与社群热议\n- **动态来源**: [关注 X 平台最新热议](${xUrl})\n- **用户评价**: 社区开发者普遍称赞其极速响应与简洁交互，成为许多人日常效率工具栈的常备之选。\n- **使用反馈**: 许多博主分享了将其融入团队协作、知识管理与日常开发的实际范例。`
-    : `### 💬 社区反响与口碑沉淀\n- **行业反馈**: 在各大技术社区与开发者社群中，${appName} 凭借出色的性能表现与优雅的设计细节赢得了广泛好评。\n- **高频讨论**: 用户集中探讨其在轻量化协作、跨平台体验以及无缝同步等方面的显著优势。`;
+  const optionalXSection = xUrl
+    ? `\n\n---\n\n## 🐦 社交反响与社区热议\n- **动态来源**: [关注 X 平台最新动态](${xUrl})\n- **用户评价**: 社区开发者普遍称赞其极速响应与简洁交互，成为许多人日常效率工具栈的常备之选。\n- **使用反馈**: 许多博主分享了将其融入团队协作、知识管理与日常开发的实际范例。`
+    : "";
 
   const content = `# 🌟 核心亮点与产品全貌
 
@@ -255,19 +276,7 @@ ${appName} 作为一款现代化的 Web 应用，以其极简的设计理念与�
 
 1. **即开即用，极致轻量**：基于现代浏览器引擎优化，内存占用低，启动迅速。
 2. **多端自适应响应式布局**：无论是桌面大屏、iPad 平板还是手机端，都能自适应呈现最佳视野。
-3. **严密的数据隐私与安全防护**：遵循行业最高安全标准，保障用户交互数据的机密性与完整性。
-
----
-
-## 💻 GitHub 与代码沉淀
-
-${githubSection}
-
----
-
-## 🐦 社交反响与社区热议
-
-${xSection}
+3. **严密的数据隐私与安全防护**：遵循行业最高安全标准，保障用户交互数据的机密性与完整性。${optionalGhSection}${optionalXSection}
 
 ---
 
@@ -308,20 +317,27 @@ export async function analyzeAndGenerateArticle(
   const appName = parentApp?.name || cleanTitle(crawl.title, parsedUrl.hostname);
   const fallback = generateFallbackArticle(crawl, parentApp);
 
-  const systemPrompt = `你是一位资深科技媒体主编、开源产品猎手与 Web 产品体验官。
-你的任务是对传入的网页内容（可能是一个 Web 应用主站、具体子页面如文档/功能/更新、GitHub 仓库或 X 社区动态）进行深度研判并产出高质量结构化推荐内容。
+  const systemPrompt = `你是一位资深科技媒体主编、Web 产品体验官与架构师。
+你的任务是对传入的网页内容进行客观中立、有洞察力的深度研判，产出高质量结构化推荐内容。
 必须以纯 JSON 格式输出，不要包含任何 markdown 代码块标记，不要包含 \`\`\`json 前缀。
+
+⚠️ 特别研判原则（非常重要）：
+1. 绝大多数 Web 应用、SaaS 平台（如 Vercel、Figma、Linear 等）是商业服务或闭源工具，绝对不要主动臆造或强加假设为开源项目！
+2. 只有当目标页面本身明确就是开源仓库（如 GitHub 仓库页），或正文有极其明确的证据表明该产品本身开源且提供了其官方代码仓库时，才在 "github_url" 填写真实的 "https://github.com/{owner}/{repo}"。
+3. 严禁把应用自身的官网链接（如 vercel.com）误填入 github_url！若不是开源仓库，必须输出空字符串 ""。
+4. 同理，只有确认该应用官方 X/Twitter 账号时才填写 "x_url"，否则必须输出空字符串 ""。
+5. 文章内容 ("content") 必须根据产品实际属性（SaaS 平台、设计协同、在线工具、AI 服务、基础设施等）量体裁衣，不要对非开源产品生搬硬套插入 GitHub 开源章节。
 
 JSON 字段定义如下：
 {
-  "is_meaningful": true, // 布尔值：若页面有实质内容、实用价值、开源仓库、社区讨论则为 true；若是纯空白页、404、无实质内容的重定向则为 false。
-  "label": "2~6字精准页面标注", // 如: "GitHub 仓库", "技术文档", "社交动态", "核心功能", "定价方案", "开源生态"
-  "tag": "推荐类型", // 只能从 ["精选推荐", "开源解读", "社交热议", "深度评测"] 中选择一个
-  "title": "深度推荐文章标题（生动、有力，针对该页面的特色命名）",
+  "is_meaningful": true, // 布尔值：若页面有实质内容则为 true；若是纯空白页、404、无实质内容则为 false
+  "label": "2~6字精准页面标注（如: 核心功能、云端部署、协同设计、技术文档、社交动态，非开源切勿标开源）",
+  "tag": "推荐类型（只能从 [\"精选推荐\", \"深度评测\", \"功能解析\", \"开源解读\", \"社交热议\"] 中选一个，非开源项目切勿选开源解读）",
+  "title": "深度推荐文章标题（生动、有力，针对该产品特色命名）",
   "summary": "80~150字核心导读摘要",
-  "github_url": "如果页面涉及或提供了 GitHub 仓库链接，提取出来，否则输出空字符串",
-  "x_url": "如果页面涉及或提供了 X/Twitter 动态或主页链接，提取出来，否则输出空字符串",
-  "content": "完整的 Markdown 格式深度推荐文章（需包含：# 🌟 核心亮点与产品全貌、## 🛠️ 核心架构与功能解析、## 💻 GitHub 开源生态与代码沉淀、## 🐦 社交反响与社区热议、## 💡 深度上手与实用技巧指南、## 🎯 综合研判与适用人群）",
+  "github_url": "仅当该项目本身是开源项目且有官方代码仓库时填写完整 GitHub 链接，否则必须输出空字符串 \"\"",
+  "x_url": "如果页面明确提供了该产品的官方 X 账号主页则填写，否则必须输出空字符串 \"\"",
+  "content": "完整的 Markdown 格式深度推荐文章，根据产品特性自由灵活布局章节（建议包含：# 🌟 核心亮点与产品全貌、## 🛠️ 核心架构与功能解析、## 💡 深度上手与实用技巧指南、## 🎯 综合研判与适用人群，非开源项目切勿包含 GitHub 开源章节）",
   "author": "AppStore 精选编辑部"
 }`;
 
@@ -330,8 +346,7 @@ JSON 字段定义如下：
 当前分析目标页面: ${crawl.url}
 页面标题: ${crawl.title}
 页面描述: ${crawl.description}
-已检测到的 GitHub 链接: ${crawl.githubUrl || "无"}
-已检测到的 X (Twitter) 链接: ${crawl.xUrl || "无"}
+目标网址: ${crawl.url}
 页面正文节选:
 ${crawl.text.slice(0, 1600)}`;
 
@@ -391,8 +406,8 @@ ${crawl.text.slice(0, 1600)}`;
           title: typeof parsed.title === "string" && parsed.title.trim() ? parsed.title.trim() : fallback.title,
           summary: typeof parsed.summary === "string" && parsed.summary.trim() ? parsed.summary.trim() : fallback.summary,
           content: typeof parsed.content === "string" && parsed.content.length > 50 ? parsed.content.trim() : fallback.content,
-          github_url: parsed.github_url || crawl.githubUrl || fallback.github_url,
-          x_url: parsed.x_url || crawl.xUrl || fallback.x_url,
+          github_url: isValidGithubRepoUrl(parsed.github_url) ? parsed.github_url.trim() : (parsedUrl.hostname.includes("github.com") && isValidGithubRepoUrl(crawl.url) ? crawl.url : undefined),
+          x_url: isValidXUrl(parsed.x_url) ? parsed.x_url.trim() : ((parsedUrl.hostname.includes("x.com") || parsedUrl.hostname.includes("twitter.com")) && isValidXUrl(crawl.url) ? crawl.url : undefined),
           author: parsed.author || fallback.author,
         };
       }

@@ -161,28 +161,18 @@ function parseHtmlMetadata(html: string, baseUrl: string) {
     .trim();
   const text = cleanHtml.slice(0, 3000);
 
-  // Extract GitHub URL if present
+  // Note: Do NOT scrape random third-party footer/page links for github/x.
+  // Only identify if target URL itself is directly a GitHub or X/Twitter URL.
   let githubUrl: string | undefined;
   if (parsedUrl.hostname.includes("github.com")) {
     const match = parsedUrl.pathname.match(/^\/([a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+)/);
     if (match) githubUrl = `https://github.com/${match[1]}`;
-  } else {
-    const ghMatch = html.match(/https?:\/\/(?:www\.)?github\.com\/([a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+)(?:[/"'>\s]|$)/i);
-    if (ghMatch && !ghMatch[1].startsWith("login") && !ghMatch[1].startsWith("signup") && !ghMatch[1].startsWith("features") && !ghMatch[1].startsWith("pricing")) {
-      githubUrl = `https://github.com/${ghMatch[1].replace(/[/"'>\s].*$/, "")}`;
-    }
   }
 
-  // Extract X (Twitter) URL if present
   let xUrl: string | undefined;
   if (parsedUrl.hostname.includes("x.com") || parsedUrl.hostname.includes("twitter.com")) {
     const match = parsedUrl.pathname.match(/^\/([a-zA-Z0-9_]+(?:\/status\/\d+)?)/);
     if (match) xUrl = `https://x.com/${match[1]}`;
-  } else {
-    const xMatch = html.match(/https?:\/\/(?:www\.)?(?:twitter\.com|x\.com)\/([a-zA-Z0-9_]+(?:\/status\/\d+)?)(?:[/"'>\s]|$)/i);
-    if (xMatch && !xMatch[1].startsWith("home") && !xMatch[1].startsWith("explore") && !xMatch[1].startsWith("search") && !xMatch[1].startsWith("intent")) {
-      xUrl = `https://x.com/${xMatch[1].replace(/[/"'>\s].*$/, "")}`;
-    }
   }
 
   return { title, description, seoImage, iconUrl, text, primaryColor, githubUrl, xUrl };
@@ -313,21 +303,7 @@ export async function crawlWebsite(
               }
             }
             let extractedGh: string | undefined;
-            const ghA = document.querySelector('a[href*="github.com/"]');
-            if (ghA && ghA.getAttribute("href")) {
-              const h = ghA.getAttribute("href") || "";
-              if (!h.includes("/login") && !h.includes("/signup") && !h.includes("/features")) {
-                extractedGh = h;
-              }
-            }
             let extractedX: string | undefined;
-            const xA = document.querySelector('a[href*="x.com/"], a[href*="twitter.com/"]');
-            if (xA && xA.getAttribute("href")) {
-              const h = xA.getAttribute("href") || "";
-              if (!h.includes("/intent/") && !h.includes("/share")) {
-                extractedX = h;
-              }
-            }
             return {
               ogTitle,
               ogDesc,
@@ -413,12 +389,6 @@ export async function crawlWebsite(
         } catch {
           // keep fallback
         }
-      }
-      if (metadata.extractedGh && !githubUrl) {
-        githubUrl = metadata.extractedGh;
-      }
-      if (metadata.extractedX && !xUrl) {
-        xUrl = metadata.extractedX;
       }
       tabletScreenshotBuffer = rawTabletScreenshot;
       mobileScreenshotBuffer = rawMobileScreenshot;

@@ -1,5 +1,5 @@
 import { crawlWebsite } from "@/lib/crawler";
-import { summarizeWithAgent, analyzeAndGenerateArticle } from "@/lib/agent";
+import { summarizeWithAgent, analyzeAndGenerateArticle, isValidGithubRepoUrl, isValidXUrl } from "@/lib/agent";
 import {
   insertApp,
   getAppByDomain,
@@ -68,8 +68,8 @@ export async function POST(request: Request) {
             tag: analysis.tag,
             content: analysis.content,
             cover_image: crawlResult.screenshots[0] || crawlResult.coverUrl || existingApp.cover_url,
-            github_url: analysis.github_url || crawlResult.githubUrl,
-            x_url: analysis.x_url || crawlResult.xUrl,
+            github_url: isValidGithubRepoUrl(analysis.github_url) ? analysis.github_url : undefined,
+            x_url: isValidXUrl(analysis.x_url) ? analysis.x_url : undefined,
             source_url: target,
             author: analysis.author,
             read_time: "3 分钟阅读",
@@ -176,8 +176,12 @@ export async function POST(request: Request) {
         tag: appData.category || "精选推荐",
         content: appData.articles?.[0]?.content || appData.description,
         cover_image: crawlResult.screenshots[0] || crawlResult.coverUrl || existingApp.cover_url,
-        github_url: crawlResult.githubUrl || existingApp.url,
-        x_url: crawlResult.xUrl,
+        github_url: isValidGithubRepoUrl(appData.articles?.[0]?.github_url)
+          ? appData.articles![0].github_url
+          : (isValidGithubRepoUrl(crawlResult.githubUrl) ? crawlResult.githubUrl : undefined),
+        x_url: isValidXUrl(appData.articles?.[0]?.x_url)
+          ? appData.articles![0].x_url
+          : (isValidXUrl(crawlResult.xUrl) ? crawlResult.xUrl : undefined),
         source_url: target,
         author: session.user.name || "精选推荐官",
         read_time: "3 分钟阅读",
@@ -251,6 +255,8 @@ export async function POST(request: Request) {
         firstArticle.user_id = userId;
         createdArticle = await insertArticle({
           ...firstArticle,
+          github_url: isValidGithubRepoUrl(firstArticle.github_url) ? firstArticle.github_url : undefined,
+          x_url: isValidXUrl(firstArticle.x_url) ? firstArticle.x_url : undefined,
           user_id: userId,
         });
       } catch (artSaveErr) {

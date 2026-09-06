@@ -999,7 +999,7 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
                           <span className="text-[10px] font-extrabold uppercase tracking-wider text-white/80 px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-xs">
                             {article.tag || "精选推荐"}
                           </span>
-                          {article.github_url && (
+                          {article.github_url && /^https?:\/\/(?:www\.)?github\.com\/[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+/.test(article.github_url) && (
                             <span className="text-[10px] font-bold text-emerald-300 px-2 py-0.5 rounded-full bg-black/40 backdrop-blur-xs flex items-center gap-1 border border-emerald-500/30">
                               <Code2 className="w-3 h-3" />
                               <span>GitHub 仓库</span>
@@ -1051,7 +1051,7 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
                             <span className="text-[10px] font-extrabold uppercase tracking-wider text-white/70 px-2 py-0.5 rounded-full bg-white/20">
                               {topic.tag || "精选推荐"}
                             </span>
-                            {topic.github_url && (
+                            {topic.github_url && /^https?:\/\/(?:www\.)?github\.com\/[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+/.test(topic.github_url) && (
                               <span className="text-[10px] font-bold text-emerald-300 px-2 py-0.5 rounded-full bg-black/40 flex items-center gap-1">
                                 <Code2 className="w-3 h-3" />
                                 <span>GitHub</span>

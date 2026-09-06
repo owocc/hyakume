@@ -103,14 +103,14 @@ export default async function ArticleDetailPage({ params }: Props) {
               <span>{article.tag || "精选推荐"}</span>
             </span>
 
-            {article.github_url && (
+            {article.github_url && /^https?:\/\/(?:www\.)?github\.com\/[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+/.test(article.github_url) && (
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-neutral-900 text-white text-[11px] font-medium">
                 <Code2 className="w-3 h-3" />
                 <span>包含 GitHub 仓库</span>
               </span>
             )}
 
-            {article.x_url && (
+            {article.x_url && /^https?:\/\/(?:www\.)?(?:twitter\.com|x\.com)\/[a-zA-Z0-9_]+/.test(article.x_url) && !article.x_url.replace(/\/+$/, "").endsWith("/x.com") && !article.x_url.replace(/\/+$/, "").endsWith("/twitter.com") && (
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-sky-500/15 text-sky-600 dark:text-sky-400 text-[11px] font-medium border border-sky-500/25">
                 <Share2 className="w-3 h-3" />
                 <span>包含 X 社区动态</span>
@@ -191,7 +191,7 @@ export default async function ArticleDetailPage({ params }: Props) {
         )}
 
         {/* GitHub Repository Highlight Box */}
-        {article.github_url && (
+        {article.github_url && /^https?:\/\/(?:www\.)?github\.com\/[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+/.test(article.github_url) && (
           <div className="p-4 sm:p-5 rounded-2xl bg-neutral-950 text-neutral-100 border border-neutral-800 shadow-md flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-white shrink-0">
@@ -220,7 +220,7 @@ export default async function ArticleDetailPage({ params }: Props) {
         )}
 
         {/* X / Twitter Highlight Box */}
-        {article.x_url && (
+        {article.x_url && /^https?:\/\/(?:www\.)?(?:twitter\.com|x\.com)\/[a-zA-Z0-9_]+/.test(article.x_url) && !article.x_url.replace(/\/+$/, "").endsWith("/x.com") && !article.x_url.replace(/\/+$/, "").endsWith("/twitter.com") && (
           <div className="p-4 sm:p-5 rounded-2xl bg-sky-950/20 dark:bg-sky-950/40 border border-sky-500/20 shadow-xs flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-sky-500/15 text-sky-500 flex items-center justify-center shrink-0">
