@@ -16,6 +16,7 @@ import {
   Menu,
   X,
   PlusCircle,
+  Users,
 } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { cn } from "@/lib/utils";
@@ -24,8 +25,8 @@ const PRIMARY_NAV_CONFIG = [
   { key: "apps", href: "/apps", icon: AppWindow },
   { key: "games", href: "/games", icon: Gamepad2 },
   { key: "web", href: "/web", icon: Globe },
+  { key: "dashboard", href: "/dashboard", icon: Users },
 ] as const;
-
 const CATEGORIES_NAV_CONFIG = [
   { key: "all", href: "/category/all", id: "all", icon: LayoutGrid },
   { key: "tools", href: "/category/tools", id: "tools", icon: Wrench },

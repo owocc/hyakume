@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS apps (
   related_topics TEXT,          -- JSON array of related editorial topics
   featured BOOLEAN DEFAULT FALSE NOT NULL,
   trending BOOLEAN DEFAULT FALSE NOT NULL,
+  user_id TEXT DEFAULT 'system' NOT NULL,
   created_at BIGINT NOT NULL,
   updated_at BIGINT NOT NULL
 );
@@ -59,4 +60,5 @@ CREATE TABLE IF NOT EXISTS reviews (
 CREATE INDEX IF NOT EXISTS idx_apps_category ON apps(category);
 CREATE INDEX IF NOT EXISTS idx_apps_featured ON apps(featured);
 CREATE INDEX IF NOT EXISTS idx_apps_trending ON apps(trending);
+CREATE INDEX IF NOT EXISTS idx_apps_user_id ON apps(user_id);
 CREATE INDEX IF NOT EXISTS idx_reviews_app_id ON reviews(app_id);

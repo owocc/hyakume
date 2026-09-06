@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, useSearchParams, useRouter } from "next/navigation";
+import { useSession } from "@/lib/auth-client";
 import { SiteHeader } from "@/components/site-header";
 import { Footer } from "@/components/footer";
 import {
@@ -15,6 +16,7 @@ import {
   Sparkles,
   BookOpen,
   Layers,
+  LogIn,
 } from "lucide-react";
 import type { AppItem, SubpageItem, ArticleItem } from "@/lib/types";
 import { SITE_CONFIG } from "@/lib/config";
@@ -174,12 +176,13 @@ const STEP_CONFIGS: StepConfig[] = [
 ];
 
 function RecommendDetailContent() {
+  const router = useRouter();
   const params = useParams();
   const searchParams = useSearchParams();
+  const { data: session, isPending: sessionLoading } = useSession();
 
   const id = (params?.id as string) || "rec_task";
   const targetUrl = searchParams.get("url") || "https://linear.app";
-
   // Pipeline state
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [userSelectedStep, setUserSelectedStep] = useState<number | null>(null);
@@ -210,6 +213,17 @@ function RecommendDetailContent() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ url: targetUrl }),
         });
+
+        if (res.status === 401) {
+          setErrorMsg("发布需要注册并登录账号，正在为您跳转到登录页面...");
+          setIsCompleted(true);
+          setTimeout(() => {
+            const currentUrl = `/recommend?url=${encodeURIComponent(targetUrl)}`;
+            router.push(`/login?redirect=${encodeURIComponent(currentUrl)}`);
+          }, 1500);
+          return;
+        }
+
         const data = (await res.json()) as {
           success?: boolean;
           app?: AppItem;
@@ -219,7 +233,6 @@ function RecommendDetailContent() {
           skippedMainScreenshot?: boolean;
           error?: string;
         };
-
         if (isCancelled) return;
 
         if (data.success && data.app) {
@@ -371,13 +384,22 @@ function RecommendDetailContent() {
                   </Link>
                 </div>
               ) : isCompleted && errorMsg ? (
-                <Link
-                  href="/recommend"
-                  className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-red-600 text-white text-xs sm:text-sm font-medium hover:bg-red-700 transition-all shadow-sm"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  <span>重试其他应用</span>
-                </Link>
+                <div className="flex items-center gap-2">
+                  <Link
+                    href={`/login?redirect=${encodeURIComponent(`/recommend?url=${encodeURIComponent(targetUrl)}`)}`}
+                    className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-primary text-primary-foreground text-xs sm:text-sm font-medium hover:bg-primary-hover transition-all shadow-sm"
+                  >
+                    <LogIn className="w-3.5 h-3.5" />
+                    <span>立即登录</span>
+                  </Link>
+                  <Link
+                    href="/recommend"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-muted text-foreground text-xs sm:text-sm font-medium hover:bg-muted/80 transition-all border border-border"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>返回重试</span>
+                  </Link>
+                </div>
               ) : (
                 <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-muted border border-border text-foreground text-xs font-medium">
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />

@@ -11,8 +11,18 @@ import {
   getSubpagesByAppId,
 } from "@/lib/db";
 import type { SubpageItem, ArticleItem } from "@/lib/types";
+import { auth } from "@/lib/auth";
+
 export async function POST(request: Request) {
   try {
+    const session = await auth.api.getSession({ headers: request.headers });
+    if (!session || !session.user) {
+      return Response.json(
+        { success: false, error: "必须为注册用户，登录后才能发布新的应用" },
+        { status: 401 }
+      );
+    }
+    const userId = session.user.id;
     const body = (await request.json()) as { url?: string };
     const rawUrl = body.url?.trim();
 
@@ -52,6 +62,7 @@ export async function POST(request: Request) {
             id: articleId,
             app_id: existingApp.id,
             slug: `${existingApp.id}-${Date.now().toString(36)}`,
+            user_id: userId,
             title: analysis.title,
             summary: analysis.summary,
             tag: analysis.tag,
@@ -80,7 +91,7 @@ export async function POST(request: Request) {
             x_url: savedArticle.x_url,
           };
           const existingTopics = Array.isArray(existingApp.related_topics) ? existingApp.related_topics : [];
-          const updatedTopics = [newTopic, ...existingTopics.filter((t) => t.title !== savedArticle?.title)];
+          const updatedTopics = [newTopic, ...existingTopics.filter((t: { title?: string }) => t.title !== savedArticle?.title)];
           await updateApp(existingApp.id, { related_topics: updatedTopics });
         }
 
@@ -91,6 +102,7 @@ export async function POST(request: Request) {
           app_id: existingApp.id,
           url: target,
           path: pathname + (parsed.search || ""),
+          user_id: userId,
           title: crawlResult.title || pathname,
           description: crawlResult.description || "",
           screenshot: crawlResult.screenshots[0] || crawlResult.coverUrl,
@@ -138,37 +150,73 @@ export async function POST(request: Request) {
       }
 
       // Case B: Main site URL submitted and already in DB
-      // Fast return: do NOT re-crawl or block on LLM; return existing app state immediately
-      const [existingArticles, existingSubpages] = await Promise.all([
-        getArticlesByAppId(existingApp.id),
+      // Domain is public/shared; trigger an AI content update and generate a new recommendation article for THIS user
+      const crawlResult = await crawlWebsite(target, { isSubpage: false });
+      const appData = await summarizeWithAgent(crawlResult);
+
+      // Update public app details with latest AI analysis
+      await updateApp(existingApp.id, {
+        tagline: appData.tagline || existingApp.tagline,
+        description: appData.description || existingApp.description,
+        category: appData.category || existingApp.category,
+        screenshots: appData.screenshots && appData.screenshots.length > 0 ? appData.screenshots : existingApp.screenshots,
+        preview_features: appData.preview_features && appData.preview_features.length > 0 ? appData.preview_features : existingApp.preview_features,
+        updated_at: Date.now(),
+      });
+
+      // Generate and attribute a fresh recommendation article to the submitting user
+      const articleId = "art_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      const userArticle: ArticleItem = {
+        id: articleId,
+        app_id: existingApp.id,
+        slug: `${existingApp.id}-${Date.now().toString(36)}`,
+        user_id: userId,
+        title: appData.articles?.[0]?.title || `深度解析与精选推荐：${existingApp.name}`,
+        summary: appData.articles?.[0]?.summary || appData.description,
+        tag: appData.category || "精选推荐",
+        content: appData.articles?.[0]?.content || appData.description,
+        cover_image: crawlResult.screenshots[0] || crawlResult.coverUrl || existingApp.cover_url,
+        github_url: crawlResult.githubUrl || existingApp.url,
+        x_url: crawlResult.xUrl,
+        source_url: target,
+        author: session.user.name || "精选推荐官",
+        read_time: "3 分钟阅读",
+        views: 0,
+        likes: 0,
+        created_at: Date.now(),
+        updated_at: Date.now(),
+      };
+      await insertArticle(userArticle);
+
+      const [refreshedApp, existingSubpages] = await Promise.all([
+        getAppById(existingApp.id),
         getSubpagesByAppId(existingApp.id),
       ]);
-
-      const primaryArticle = existingArticles[0] || null;
-      const refreshedApp = await getAppById(existingApp.id);
 
       return Response.json({
         success: true,
         alreadyExists: true,
         isSubpage: false,
         app: refreshedApp || existingApp,
-        article: primaryArticle,
+        article: userArticle,
         subpages: existingSubpages,
         crawl: {
           url: existingApp.url,
           title: existingApp.name,
           usedSeoImage: Boolean(existingApp.seo_image),
           coverUrl: existingApp.cover_url,
+          screenshots: crawlResult.screenshots,
         },
         steps: [
-          { step: 1, name: "匹配已有主站快照与记录", status: "completed" },
-          { step: 2, name: "同步应用多端元数据与子页面", status: "completed" },
-          { step: 3, name: "加载云端封面与快照存储", status: "completed" },
-          { step: 4, name: "AI Agent 推荐解读与知识库关联", status: "completed" },
-          { step: 5, name: "应用数据就绪", status: "completed" },
+          { step: 1, name: "匹配已有公共域名记录，触发 AI 重新深度抓取", status: "completed" },
+          { step: 2, name: "多端渲染并自动更新应用信息", status: "completed" },
+          { step: 3, name: "AI 总结更新应用功能特色，公共数据已刷新", status: "completed" },
+          { step: 4, name: `为您生成专属归属推荐文章《${userArticle.title}》`, status: "completed" },
+          { step: 5, name: "内容更新与文章归属完成", status: "completed" },
         ],
       });
     }
+
     const steps = [
       { step: 1, name: "页面渲染与多端快照截取 (PC / 平板 / 手机)", status: "processing" },
       { step: 2, name: "提取网页元数据与文本", status: "pending" },
@@ -190,19 +238,25 @@ export async function POST(request: Request) {
     steps[3].status = "completed";
 
     // 4. Save to database
-    const savedApp = await insertApp(appData);
-
+    appData.user_id = userId;
+    const savedApp = await insertApp({
+      ...appData,
+      user_id: userId,
+    });
     let createdArticle: ArticleItem | null = null;
     if (appData.articles && appData.articles.length > 0) {
       try {
         const firstArticle = appData.articles[0];
         firstArticle.app_id = savedApp.id;
-        createdArticle = await insertArticle(firstArticle);
+        firstArticle.user_id = userId;
+        createdArticle = await insertArticle({
+          ...firstArticle,
+          user_id: userId,
+        });
       } catch (artSaveErr) {
         console.warn("Failed to persist initial article:", artSaveErr);
       }
     }
-
     // If submitted URL was a subpage, also save to subpagesTable
     let createdSubpage: SubpageItem | null = null;
     if (isSubpage) {
@@ -220,6 +274,7 @@ export async function POST(request: Request) {
           label: "核心页面",
           is_meaningful: true,
           article_id: createdArticle?.id,
+          user_id: userId,
           created_at: Date.now(),
         };
         await insertSubpage(createdSubpage);

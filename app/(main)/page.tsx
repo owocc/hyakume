@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { BookFan } from "@/components/book-fan";
 import { Footer } from "@/components/footer";
 import { Logo } from "@/components/logo";
+import { SiteHeader } from "@/components/site-header";
 import { SITE_CONFIG } from "@/lib/config";
 
 export const metadata = {
@@ -66,13 +67,16 @@ export default async function LandingPage() {
   const t = await getTranslations("home");
   return (
     <div className="w-full bg-background text-foreground flex flex-col selection:bg-primary selection:text-primary-foreground transition-colors duration-200">
+      {/* Split Island Floating Header */}
+      <SiteHeader />
+
       {/* 
         Hero Section: Strict 100dvh height viewport.
         overflow-hidden prevents hero scrolling and content clipping/spillover.
       */}
       <div className="h-[100dvh] max-h-[100dvh] w-full flex flex-col justify-between overflow-hidden relative flex-none">
         {/* Top Section: Centered Logo & Branding */}
-        <header className="pt-[18vh] sm:pt-[12vh] md:pt-9 px-4 sm:px-6 flex justify-center items-center z-10 flex-none">
+        <header className="pt-[18vh] sm:pt-[14vh] md:pt-14 px-4 sm:px-6 flex justify-center items-center z-10 flex-none">
           <Logo variant="hero" href="/" />
         </header>
 

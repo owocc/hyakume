@@ -1,13 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { useSession } from "@/lib/auth-client";
 import { FloatingBooks } from "@/components/floating-books";
 import { Footer } from "@/components/footer";
-import { Globe, ArrowRight } from "lucide-react";
+import { SiteHeader } from "@/components/site-header";
+import { Globe, ArrowRight, Lock } from "lucide-react";
 import { Logo } from "@/components/logo";
-
 const PRESET_URLS = [
   { name: "GitHub", url: "https://github.com" },
   { name: "Vercel", url: "https://vercel.com" },
@@ -16,11 +17,21 @@ const PRESET_URLS = [
   { name: "Excalidraw", url: "https://excalidraw.com" },
 ];
 
-export default function RecommendInputPage() {
+function RecommendInputContent() {
   const router = useRouter();
-  const [url, setUrl] = useState("");
+  const searchParams = useSearchParams();
+  const queryUrl = searchParams.get("url") || "";
+  const [url, setUrl] = useState(queryUrl);
   const [error, setError] = useState("");
+  const { data: session, isPending } = useSession();
   const t = useTranslations("recommend");
+
+  useEffect(() => {
+    if (queryUrl && !url) {
+      setUrl(queryUrl);
+    }
+  }, [queryUrl, url]);
+
   const handleSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const cleanUrl = url.trim();
@@ -36,6 +47,13 @@ export default function RecommendInputPage() {
       target = `https://${target}`;
     }
 
+    // Check if user is logged in
+    if (!session?.user) {
+      const returnUrl = `/recommend?url=${encodeURIComponent(target)}`;
+      router.push(`/login?redirect=${encodeURIComponent(returnUrl)}`);
+      return;
+    }
+
     // Generate unique recommendation ID
     const recId = "rec_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
     router.push(`/recommend/${recId}?url=${encodeURIComponent(target)}`);
@@ -44,12 +62,22 @@ export default function RecommendInputPage() {
   const handleSelectPreset = (presetUrl: string) => {
     setUrl(presetUrl);
     setError("");
+
+    if (!session?.user) {
+      const returnUrl = `/recommend?url=${encodeURIComponent(presetUrl)}`;
+      router.push(`/login?redirect=${encodeURIComponent(returnUrl)}`);
+      return;
+    }
+
     const recId = "rec_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
     router.push(`/recommend/${recId}?url=${encodeURIComponent(presetUrl)}`);
   };
 
   return (
     <div className="w-full bg-background text-foreground flex flex-col selection:bg-primary selection:text-primary-foreground transition-colors duration-200">
+      {/* Split Island Floating Header */}
+      <SiteHeader />
+
       {/* 
         Hero Section: Strict 100dvh height, no overflow, no internal scroll.
         Floating books surround the canvas, center has sleek input box without text.
@@ -59,7 +87,7 @@ export default function RecommendInputPage() {
         <FloatingBooks />
 
         {/* Top Branding */}
-        <header className="pt-4 sm:pt-8 md:pt-10 px-4 sm:px-6 flex justify-center items-center z-10 flex-none">
+        <header className="pt-12 sm:pt-14 md:pt-16 px-4 sm:px-6 flex justify-center items-center z-10 flex-none">
           <Logo variant="hero" href="/" />
         </header>
 
@@ -99,6 +127,12 @@ export default function RecommendInputPage() {
             </p>
           )}
 
+          {!session?.user && !isPending && (
+            <div className="flex items-center gap-1.5 mt-2.5 text-[11px] text-muted-foreground/90 bg-muted/40 px-3 py-1 rounded-full border border-border/50">
+              <Lock className="w-3 h-3 text-amber-500" />
+              <span>发布需要账号登录，点击发布将为您跳转至登录页</span>
+            </div>
+          )}
           {/* Quick Preset Chips */}
           <div className="mt-3 sm:mt-5 flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 px-2">
             <span className="text-xs text-muted-foreground font-medium mr-1">{t("presetLabel")}</span>
@@ -125,5 +159,13 @@ export default function RecommendInputPage() {
       */}
       <Footer />
     </div>
+  );
+}
+
+export default function RecommendInputPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-background" />}>
+      <RecommendInputContent />
+    </Suspense>
   );
 }

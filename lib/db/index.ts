@@ -2,7 +2,7 @@ import "dotenv/config";
 import { drizzle as drizzlePg, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import { drizzle as drizzleNeon, type NeonHttpDatabase } from "drizzle-orm/neon-http";
 import { neon, type NeonQueryFunction } from "@neondatabase/serverless";
-import { eq, or, and, ilike, desc, asc, type SQL } from "drizzle-orm";
+import { eq, or, and, ilike, desc, asc, inArray, type SQL } from "drizzle-orm";
 import pg from "pg";
 import type { AppItem, ReviewItem, CategoryItem, DeviceScreenshots, SubpageItem, ArticleItem } from "../types";
 import * as schema from "./schema";
@@ -193,6 +193,7 @@ function rowToApp(row: schema.AppSelect | Record<string, unknown>): AppItem {
     ),
     featured: Boolean(row.featured),
     trending: Boolean(row.trending),
+    user_id: String(row.user_id || "system"),
     created_at: Number(row.created_at) || Date.now(),
     updated_at: Number(row.updated_at) || Date.now(),
   };
@@ -246,8 +247,8 @@ export async function ensureTablesInitialized(): Promise<void> {
           privacy_not_linked TEXT,
           events TEXT,
           related_topics TEXT,
-          featured BOOLEAN DEFAULT FALSE NOT NULL,
           trending BOOLEAN DEFAULT FALSE NOT NULL,
+          user_id TEXT DEFAULT 'system' NOT NULL,
           created_at BIGINT NOT NULL,
           updated_at BIGINT NOT NULL
         )`,
@@ -271,8 +272,8 @@ export async function ensureTablesInitialized(): Promise<void> {
           screenshot TEXT NOT NULL,
           screenshots TEXT,
           label TEXT DEFAULT '核心页面' NOT NULL,
-          is_meaningful BOOLEAN DEFAULT TRUE NOT NULL,
           article_id TEXT,
+          user_id TEXT DEFAULT 'system',
           created_at BIGINT NOT NULL
         )`,
         `CREATE TABLE IF NOT EXISTS articles (
@@ -291,6 +292,7 @@ export async function ensureTablesInitialized(): Promise<void> {
           read_time TEXT DEFAULT '3 分钟阅读' NOT NULL,
           views INTEGER DEFAULT 0 NOT NULL,
           likes INTEGER DEFAULT 0 NOT NULL,
+          user_id TEXT DEFAULT 'system' NOT NULL,
           created_at BIGINT NOT NULL,
           updated_at BIGINT NOT NULL
         )`,
@@ -300,8 +302,11 @@ export async function ensureTablesInitialized(): Promise<void> {
         `CREATE INDEX IF NOT EXISTS idx_reviews_app_id ON reviews(app_id)`,
         `CREATE INDEX IF NOT EXISTS idx_subpages_app_id ON app_subpages(app_id)`,
         `CREATE INDEX IF NOT EXISTS idx_subpages_url ON app_subpages(url)`,
+        `CREATE INDEX IF NOT EXISTS idx_apps_user_id ON apps(user_id)`,
+        `CREATE INDEX IF NOT EXISTS idx_subpages_user_id ON app_subpages(user_id)`,
         `CREATE INDEX IF NOT EXISTS idx_articles_app_id ON articles(app_id)`,
         `CREATE INDEX IF NOT EXISTS idx_articles_created_at ON articles(created_at)`,
+        `CREATE INDEX IF NOT EXISTS idx_articles_user_id ON articles(user_id)`,
       ];
 
       if (isNeonDatabase(connectionString)) {
@@ -311,6 +316,17 @@ export async function ensureTablesInitialized(): Promise<void> {
         try {
           const [check] = (await neonSqlInstance`SELECT to_regclass('public.app_subpages') as exists;`) as Array<{ exists?: string }>;
           if (check?.exists) {
+            await neonSqlInstance.query(`
+              ALTER TABLE apps ADD COLUMN IF NOT EXISTS user_id TEXT DEFAULT 'system';
+              ALTER TABLE articles ADD COLUMN IF NOT EXISTS user_id TEXT DEFAULT 'system';
+              ALTER TABLE app_subpages ADD COLUMN IF NOT EXISTS user_id TEXT DEFAULT 'system';
+              CREATE INDEX IF NOT EXISTS idx_apps_user_id ON apps(user_id);
+              CREATE INDEX IF NOT EXISTS idx_articles_user_id ON articles(user_id);
+              CREATE INDEX IF NOT EXISTS idx_subpages_user_id ON app_subpages(user_id);
+              INSERT INTO "user" (id, name, email, email_verified, created_at, updated_at)
+              VALUES ('system', 'System', 'system@appstore.local', true, NOW(), NOW())
+              ON CONFLICT (id) DO NOTHING;
+            `);
             tablesInitialized = true;
             return;
           }
@@ -341,6 +357,17 @@ export async function ensureTablesInitialized(): Promise<void> {
         try {
           const checkRes = await client.query("SELECT to_regclass('public.app_subpages') as exists;");
           if (checkRes.rows[0]?.exists) {
+            await client.query(`
+              ALTER TABLE apps ADD COLUMN IF NOT EXISTS user_id TEXT DEFAULT 'system';
+              ALTER TABLE articles ADD COLUMN IF NOT EXISTS user_id TEXT DEFAULT 'system';
+              ALTER TABLE app_subpages ADD COLUMN IF NOT EXISTS user_id TEXT DEFAULT 'system';
+              CREATE INDEX IF NOT EXISTS idx_apps_user_id ON apps(user_id);
+              CREATE INDEX IF NOT EXISTS idx_articles_user_id ON articles(user_id);
+              CREATE INDEX IF NOT EXISTS idx_subpages_user_id ON app_subpages(user_id);
+              INSERT INTO "user" (id, name, email, email_verified, created_at, updated_at)
+              VALUES ('system', 'System', 'system@appstore.local', true, NOW(), NOW())
+              ON CONFLICT (id) DO NOTHING;
+            `);
             tablesInitialized = true;
             return;
           }
@@ -423,6 +450,7 @@ export async function getAllApps(options?: {
   featured?: boolean;
   trending?: boolean;
   limit?: number;
+  userId?: string;
 }): Promise<AppItem[]> {
   try {
     const database = getDb();
@@ -456,6 +484,9 @@ export async function getAllApps(options?: {
       conditions.push(eq(appsTable.trending, options.trending));
     }
 
+    if (options?.userId) {
+      conditions.push(eq(appsTable.user_id, options.userId));
+    }
     let query = (database as NeonHttpDatabase<typeof schema>)
       .select()
       .from(appsTable)
@@ -665,10 +696,10 @@ export async function insertApp(app: AppItem): Promise<AppItem> {
     related_topics: JSON.stringify(app.related_topics || []),
     featured: Boolean(app.featured),
     trending: Boolean(app.trending),
+    user_id: app.user_id || "system",
     created_at: createdAt,
     updated_at: updatedAt,
   };
-
   try {
     const database = getDb();
     if (!database) {
@@ -713,6 +744,7 @@ export async function insertApp(app: AppItem): Promise<AppItem> {
           related_topics: values.related_topics,
           featured: values.featured,
           trending: values.trending,
+          ...(app.user_id ? { user_id: app.user_id } : {}),
           updated_at: values.updated_at,
         },
       });
@@ -803,6 +835,7 @@ export async function getSubpagesByAppId(appId: string): Promise<SubpageItem[]> 
       label: r.label,
       is_meaningful: Boolean(r.is_meaningful),
       article_id: r.article_id || undefined,
+      user_id: r.user_id || "system",
       created_at: Number(r.created_at),
     }));
   } catch (err) {
@@ -837,6 +870,7 @@ export async function getSubpageByUrl(url: string): Promise<SubpageItem | null> 
       label: r.label,
       is_meaningful: Boolean(r.is_meaningful),
       article_id: r.article_id || undefined,
+      user_id: r.user_id || "system",
       created_at: Number(r.created_at),
     };
   } catch (err) {
@@ -858,9 +892,9 @@ export async function insertSubpage(subpage: SubpageItem): Promise<SubpageItem> 
     label: subpage.label || "核心页面",
     is_meaningful: subpage.is_meaningful ?? true,
     article_id: subpage.article_id || null,
+    user_id: subpage.user_id || "system",
     created_at: subpage.created_at || Date.now(),
   };
-
   try {
     const database = getDb();
     if (!database) {
@@ -881,6 +915,7 @@ export async function insertSubpage(subpage: SubpageItem): Promise<SubpageItem> 
           label: values.label,
           is_meaningful: values.is_meaningful,
           article_id: values.article_id,
+          ...(subpage.user_id ? { user_id: subpage.user_id } : {}),
         },
       });
 
@@ -919,6 +954,7 @@ export async function getArticlesByAppId(appId: string): Promise<ArticleItem[]> 
       read_time: r.read_time,
       views: Number(r.views || 0),
       likes: Number(r.likes || 0),
+      user_id: r.user_id || "system",
       created_at: Number(r.created_at),
       updated_at: Number(r.updated_at),
     }));
@@ -958,6 +994,7 @@ export async function getArticleById(id: string): Promise<ArticleItem | null> {
       read_time: r.read_time,
       views: Number(r.views || 0),
       likes: Number(r.likes || 0),
+      user_id: r.user_id || "system",
       created_at: Number(r.created_at),
       updated_at: Number(r.updated_at),
     };
@@ -977,17 +1014,26 @@ export async function getArticleById(id: string): Promise<ArticleItem | null> {
   }
 }
 
-export async function getAllArticles(limit = 20): Promise<ArticleItem[]> {
+export async function getAllArticles(options?: { limit?: number; userId?: string } | number): Promise<ArticleItem[]> {
   try {
     const database = getDb();
     if (!database) return [];
     await ensureTablesInitialized();
 
-    const rows = await (database as NeonHttpDatabase<typeof schema>)
+    const limit = typeof options === "number" ? options : (options?.limit || 20);
+    const userId = typeof options === "object" ? options?.userId : undefined;
+
+    let query = (database as NeonHttpDatabase<typeof schema>)
       .select()
       .from(articlesTable)
       .orderBy(desc(articlesTable.created_at))
-      .limit(limit);
+      .$dynamic();
+
+    if (userId) {
+      query = query.where(eq(articlesTable.user_id, userId));
+    }
+
+    const rows = await query.limit(limit);
 
     return rows.map((r) => ({
       id: r.id,
@@ -1005,6 +1051,7 @@ export async function getAllArticles(limit = 20): Promise<ArticleItem[]> {
       read_time: r.read_time,
       views: Number(r.views || 0),
       likes: Number(r.likes || 0),
+      user_id: r.user_id || "system",
       created_at: Number(r.created_at),
       updated_at: Number(r.updated_at),
     }));
@@ -1032,10 +1079,10 @@ export async function insertArticle(article: ArticleItem): Promise<ArticleItem> 
     read_time: article.read_time || "3 分钟阅读",
     views: article.views || 0,
     likes: article.likes || 0,
+    user_id: article.user_id || "system",
     created_at: article.created_at || now,
     updated_at: article.updated_at || now,
   };
-
   try {
     const database = getDb();
     if (!database) {
@@ -1061,6 +1108,7 @@ export async function insertArticle(article: ArticleItem): Promise<ArticleItem> 
           read_time: values.read_time,
           views: values.views,
           likes: values.likes,
+          ...(article.user_id ? { user_id: article.user_id } : {}),
           updated_at: values.updated_at,
         },
       });
@@ -1111,3 +1159,82 @@ export async function updateApp(
 }
 
 export * from "./schema";
+
+export async function getUserApps(userId: string): Promise<AppItem[]> {
+  try {
+    const database = getDb();
+    if (!database) return [];
+    await ensureTablesInitialized();
+
+    // Get apps that user authored or contributed recommendation articles to
+    const userArticles = await getAllArticles({ userId, limit: 100 });
+    const appIdsFromArticles = Array.from(
+      new Set(userArticles.map((a) => a.app_id).filter(Boolean))
+    );
+
+    const conditions: (SQL | undefined)[] = [eq(appsTable.user_id, userId)];
+    if (appIdsFromArticles.length > 0) {
+      conditions.push(inArray(appsTable.id, appIdsFromArticles));
+    }
+
+    const rows = await (database as NeonHttpDatabase<typeof schema>)
+      .select()
+      .from(appsTable)
+      .where(or(...conditions))
+      .orderBy(desc(appsTable.updated_at));
+
+    return rows.map(rowToApp);
+  } catch (err) {
+    console.error("Error in getUserApps:", err);
+    return [];
+  }
+}
+export async function getUserArticles(userId: string): Promise<ArticleItem[]> {
+  return getAllArticles({ userId, limit: 100 });
+}
+
+export async function getUserSubpages(userId: string): Promise<SubpageItem[]> {
+  try {
+    const database = getDb();
+    if (!database) return [];
+    await ensureTablesInitialized();
+
+    const rows = await (database as NeonHttpDatabase<typeof schema>)
+      .select()
+      .from(subpagesTable)
+      .where(eq(subpagesTable.user_id, userId))
+      .orderBy(desc(subpagesTable.created_at));
+
+    return rows.map((r) => ({
+      id: r.id,
+      app_id: r.app_id,
+      url: r.url,
+      path: r.path,
+      title: r.title,
+      description: r.description || "",
+      screenshot: r.screenshot,
+      screenshots: parseJsonArray<string>(r.screenshots, []),
+      label: r.label,
+      is_meaningful: Boolean(r.is_meaningful),
+      article_id: r.article_id || undefined,
+      user_id: r.user_id || "system",
+      created_at: Number(r.created_at),
+    }));
+  } catch (err) {
+    console.error("Error in getUserSubpages:", err);
+    return [];
+  }
+}
+
+export async function getUserPublications(userId: string): Promise<{
+  apps: AppItem[];
+  articles: ArticleItem[];
+  subpages: SubpageItem[];
+}> {
+  const [apps, articles, subpages] = await Promise.all([
+    getUserApps(userId),
+    getUserArticles(userId),
+    getUserSubpages(userId),
+  ]);
+  return { apps, articles, subpages };
+}

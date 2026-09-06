@@ -44,6 +44,7 @@ export const appsTable = pgTable(
     related_topics: text("related_topics"),
     featured: boolean("featured").default(false).notNull(),
     trending: boolean("trending").default(false).notNull(),
+    user_id: text("user_id").default("system").notNull(),
     created_at: bigint("created_at", { mode: "number" }).notNull(),
     updated_at: bigint("updated_at", { mode: "number" }).notNull(),
   },
@@ -51,6 +52,7 @@ export const appsTable = pgTable(
     index("idx_apps_category").on(table.category),
     index("idx_apps_featured").on(table.featured),
     index("idx_apps_trending").on(table.trending),
+    index("idx_apps_user_id").on(table.user_id),
   ]
 );
 
@@ -89,11 +91,13 @@ export const subpagesTable = pgTable(
     label: text("label").default("核心页面").notNull(),
     is_meaningful: boolean("is_meaningful").default(true).notNull(),
     article_id: text("article_id"),
+    user_id: text("user_id").default("system"),
     created_at: bigint("created_at", { mode: "number" }).notNull(),
   },
   (table) => [
     index("idx_subpages_app_id").on(table.app_id),
     index("idx_subpages_url").on(table.url),
+    index("idx_subpages_user_id").on(table.user_id),
   ]
 );
 
@@ -117,12 +121,14 @@ export const articlesTable = pgTable(
     read_time: text("read_time").default("3 分钟阅读").notNull(),
     views: integer("views").default(0).notNull(),
     likes: integer("likes").default(0).notNull(),
+    user_id: text("user_id").default("system").notNull(),
     created_at: bigint("created_at", { mode: "number" }).notNull(),
     updated_at: bigint("updated_at", { mode: "number" }).notNull(),
   },
   (table) => [
     index("idx_articles_app_id").on(table.app_id),
     index("idx_articles_created_at").on(table.created_at),
+    index("idx_articles_user_id").on(table.user_id),
   ]
 );
 

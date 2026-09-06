@@ -52,6 +52,7 @@ export interface AppItem {
   }>;
   featured: boolean;
   trending: boolean;
+  user_id?: string;
   created_at: number;
   updated_at: number;
   subpages?: SubpageItem[];
@@ -88,8 +89,9 @@ export interface SubpageItem {
   label: string;
   is_meaningful: boolean;
   article_id?: string;
+  user_id?: string;
   created_at: number;
-}
+};
 
 export interface ArticleItem {
   id: string;
@@ -107,6 +109,7 @@ export interface ArticleItem {
   read_time: string;
   views: number;
   likes: number;
+  user_id?: string;
   created_at: number;
   updated_at: number;
   app?: AppItem;
