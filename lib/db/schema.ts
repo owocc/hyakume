@@ -73,13 +73,82 @@ export const reviewsTable = pgTable(
   ]
 );
 
+export const subpagesTable = pgTable(
+  "app_subpages",
+  {
+    id: text("id").primaryKey(),
+    app_id: text("app_id")
+      .notNull()
+      .references(() => appsTable.id, { onDelete: "cascade" }),
+    url: text("url").notNull(),
+    path: text("path").notNull(),
+    title: text("title").notNull(),
+    description: text("description").default(""),
+    screenshot: text("screenshot").notNull(),
+    screenshots: text("screenshots"),
+    label: text("label").default("核心页面").notNull(),
+    is_meaningful: boolean("is_meaningful").default(true).notNull(),
+    article_id: text("article_id"),
+    created_at: bigint("created_at", { mode: "number" }).notNull(),
+  },
+  (table) => [
+    index("idx_subpages_app_id").on(table.app_id),
+    index("idx_subpages_url").on(table.url),
+  ]
+);
+
+export const articlesTable = pgTable(
+  "articles",
+  {
+    id: text("id").primaryKey(),
+    app_id: text("app_id")
+      .notNull()
+      .references(() => appsTable.id, { onDelete: "cascade" }),
+    slug: text("slug"),
+    title: text("title").notNull(),
+    summary: text("summary").default(""),
+    tag: text("tag").default("精选推荐").notNull(),
+    content: text("content").notNull(),
+    cover_image: text("cover_image").default(""),
+    github_url: text("github_url"),
+    x_url: text("x_url"),
+    source_url: text("source_url"),
+    author: text("author").default("AppStore 精选编辑部").notNull(),
+    read_time: text("read_time").default("3 分钟阅读").notNull(),
+    views: integer("views").default(0).notNull(),
+    likes: integer("likes").default(0).notNull(),
+    created_at: bigint("created_at", { mode: "number" }).notNull(),
+    updated_at: bigint("updated_at", { mode: "number" }).notNull(),
+  },
+  (table) => [
+    index("idx_articles_app_id").on(table.app_id),
+    index("idx_articles_created_at").on(table.created_at),
+  ]
+);
+
 export const appsRelations = relations(appsTable, ({ many }) => ({
   reviews: many(reviewsTable),
+  subpages: many(subpagesTable),
+  articles: many(articlesTable),
 }));
 
 export const reviewsRelations = relations(reviewsTable, ({ one }) => ({
   app: one(appsTable, {
     fields: [reviewsTable.app_id],
+    references: [appsTable.id],
+  }),
+}));
+
+export const subpagesRelations = relations(subpagesTable, ({ one }) => ({
+  app: one(appsTable, {
+    fields: [subpagesTable.app_id],
+    references: [appsTable.id],
+  }),
+}));
+
+export const articlesRelations = relations(articlesTable, ({ one }) => ({
+  app: one(appsTable, {
+    fields: [articlesTable.app_id],
     references: [appsTable.id],
   }),
 }));
@@ -90,5 +159,9 @@ export type AppSelect = typeof appsTable.$inferSelect;
 export type AppInsert = typeof appsTable.$inferInsert;
 export type ReviewSelect = typeof reviewsTable.$inferSelect;
 export type ReviewInsert = typeof reviewsTable.$inferInsert;
+export type SubpageSelect = typeof subpagesTable.$inferSelect;
+export type SubpageInsert = typeof subpagesTable.$inferInsert;
+export type ArticleSelect = typeof articlesTable.$inferSelect;
+export type ArticleInsert = typeof articlesTable.$inferInsert;
 
 export * from "./auth-schema";

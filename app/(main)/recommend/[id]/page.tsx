@@ -12,8 +12,11 @@ import {
   ArrowRight,
   Terminal,
   RotateCcw,
+  Sparkles,
+  BookOpen,
+  Layers,
 } from "lucide-react";
-import type { AppItem } from "@/lib/types";
+import type { AppItem, SubpageItem, ArticleItem } from "@/lib/types";
 import { SITE_CONFIG } from "@/lib/config";
 
 interface StepConfig {
@@ -181,9 +184,12 @@ function RecommendDetailContent() {
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [userSelectedStep, setUserSelectedStep] = useState<number | null>(null);
   const [createdApp, setCreatedApp] = useState<AppItem | null>(null);
+  const [createdSubpage, setCreatedSubpage] = useState<SubpageItem | null>(null);
+  const [createdArticle, setCreatedArticle] = useState<ArticleItem | null>(null);
+  const [isSubpageMode, setIsSubpageMode] = useState<boolean>(false);
+  const [skippedMainScreenshot, setSkippedMainScreenshot] = useState<boolean>(false);
   const [isCompleted, setIsCompleted] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string>("");
-
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const activeStep = userSelectedStep ?? currentStep;
 
@@ -207,6 +213,10 @@ function RecommendDetailContent() {
         const data = (await res.json()) as {
           success?: boolean;
           app?: AppItem;
+          subpage?: SubpageItem | null;
+          article?: ArticleItem | null;
+          isSubpage?: boolean;
+          skippedMainScreenshot?: boolean;
           error?: string;
         };
 
@@ -214,6 +224,10 @@ function RecommendDetailContent() {
 
         if (data.success && data.app) {
           setCreatedApp(data.app);
+          if (data.subpage) setCreatedSubpage(data.subpage);
+          if (data.article) setCreatedArticle(data.article);
+          if (data.isSubpage) setIsSubpageMode(true);
+          if (data.skippedMainScreenshot) setSkippedMainScreenshot(true);
           setCurrentStep(5);
           setIsCompleted(true);
         } else {
@@ -298,12 +312,24 @@ function RecommendDetailContent() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start lg:items-end border-b border-border pb-8 sm:pb-10">
           {/* Left Hero */}
           <div className="lg:col-span-7 space-y-4">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-card border border-border text-xs font-mono text-foreground shadow-2xs">
+            <div className="inline-flex flex-wrap items-center gap-2 px-3 py-1 rounded-full bg-card border border-border text-xs font-mono text-foreground shadow-2xs">
               <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
               <span className="text-muted-foreground">{id}</span>
               <span className="text-border">•</span>
               <span className="truncate max-w-[160px] sm:max-w-md font-medium">{targetUrl}</span>
             </div>
+
+            {skippedMainScreenshot && createdApp && (
+              <div className="p-3 rounded-xl bg-primary/10 border border-primary/25 text-xs text-foreground flex items-center gap-2">
+                <span className="px-2 py-0.5 rounded-md bg-primary text-primary-foreground font-semibold text-[10px]">
+                  智能识别
+                </span>
+                <span>
+                  检测到主站已存在（<strong>{createdApp.name}</strong>），跳过主站重复截图，已完成子页面快照收纳与【
+                  <strong>{createdSubpage?.label || "特色页面"}</strong>】标注！
+                </span>
+              </div>
+            )}
 
             <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-[52px] font-extrabold tracking-tight text-foreground leading-[1.12] sm:leading-[1.08]">
               Your workflow
@@ -311,7 +337,6 @@ function RecommendDetailContent() {
               made efficient
             </h1>
           </div>
-
           {/* Right Hero: Description & Action */}
           <div className="lg:col-span-5 space-y-4 lg:pl-4">
             <p className="text-xs sm:text-sm md:text-base text-muted-foreground leading-relaxed">
@@ -321,13 +346,30 @@ function RecommendDetailContent() {
 
             <div className="flex flex-wrap items-center gap-3 pt-1">
               {createdApp ? (
-                <Link
-                  href={`/app/${createdApp.id}`}
-                  className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-primary text-primary-foreground text-xs sm:text-sm font-medium hover:bg-primary-hover transition-all shadow-sm"
-                >
-                  <span>查看收录应用详情</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </Link>
+                <div className="flex flex-wrap items-center gap-2.5">
+                  {createdArticle && (
+                    <Link
+                      href={`/article/${createdArticle.id}`}
+                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-primary-foreground text-xs sm:text-sm font-medium hover:bg-primary-hover transition-all shadow-sm"
+                    >
+                      <Sparkles className="w-4 h-4" />
+                      <span>阅读生成的推荐文章</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                  )}
+                  <Link
+                    href={`/app/${createdApp.id}`}
+                    className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs sm:text-sm font-medium transition-all shadow-sm ${
+                      createdArticle
+                        ? "bg-card border border-border text-foreground hover:bg-surface"
+                        : "bg-primary text-primary-foreground hover:bg-primary-hover"
+                    }`}
+                  >
+                    <Layers className="w-4 h-4" />
+                    <span>查看收录应用详情</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
               ) : isCompleted && errorMsg ? (
                 <Link
                   href="/recommend"

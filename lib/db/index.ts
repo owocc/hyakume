@@ -4,9 +4,9 @@ import { drizzle as drizzleNeon, type NeonHttpDatabase } from "drizzle-orm/neon-
 import { neon, type NeonQueryFunction } from "@neondatabase/serverless";
 import { eq, or, and, ilike, desc, asc, type SQL } from "drizzle-orm";
 import pg from "pg";
-import type { AppItem, ReviewItem, CategoryItem, DeviceScreenshots } from "../types";
+import type { AppItem, ReviewItem, CategoryItem, DeviceScreenshots, SubpageItem, ArticleItem } from "../types";
 import * as schema from "./schema";
-import { appsTable, reviewsTable, categoriesTable } from "./schema";
+import { appsTable, reviewsTable, categoriesTable, subpagesTable, articlesTable } from "./schema";
 
 const { Pool } = pg;
 
@@ -260,10 +260,47 @@ export async function ensureTablesInitialized(): Promise<void> {
           content TEXT NOT NULL,
           created_at BIGINT NOT NULL
         )`,
+        `CREATE TABLE IF NOT EXISTS app_subpages (
+          id TEXT PRIMARY KEY,
+          app_id TEXT NOT NULL REFERENCES apps(id) ON DELETE CASCADE,
+          url TEXT NOT NULL,
+          path TEXT NOT NULL,
+          title TEXT NOT NULL,
+          description TEXT DEFAULT '',
+          screenshot TEXT NOT NULL,
+          screenshots TEXT,
+          label TEXT DEFAULT '核心页面' NOT NULL,
+          is_meaningful BOOLEAN DEFAULT TRUE NOT NULL,
+          article_id TEXT,
+          created_at BIGINT NOT NULL
+        )`,
+        `CREATE TABLE IF NOT EXISTS articles (
+          id TEXT PRIMARY KEY,
+          app_id TEXT NOT NULL REFERENCES apps(id) ON DELETE CASCADE,
+          slug TEXT,
+          title TEXT NOT NULL,
+          summary TEXT DEFAULT '',
+          tag TEXT DEFAULT '精选推荐' NOT NULL,
+          content TEXT NOT NULL,
+          cover_image TEXT DEFAULT '',
+          github_url TEXT,
+          x_url TEXT,
+          source_url TEXT,
+          author TEXT DEFAULT 'AppStore 精选编辑部' NOT NULL,
+          read_time TEXT DEFAULT '3 分钟阅读' NOT NULL,
+          views INTEGER DEFAULT 0 NOT NULL,
+          likes INTEGER DEFAULT 0 NOT NULL,
+          created_at BIGINT NOT NULL,
+          updated_at BIGINT NOT NULL
+        )`,
         `CREATE INDEX IF NOT EXISTS idx_apps_category ON apps(category)`,
         `CREATE INDEX IF NOT EXISTS idx_apps_featured ON apps(featured)`,
         `CREATE INDEX IF NOT EXISTS idx_apps_trending ON apps(trending)`,
         `CREATE INDEX IF NOT EXISTS idx_reviews_app_id ON reviews(app_id)`,
+        `CREATE INDEX IF NOT EXISTS idx_subpages_app_id ON app_subpages(app_id)`,
+        `CREATE INDEX IF NOT EXISTS idx_subpages_url ON app_subpages(url)`,
+        `CREATE INDEX IF NOT EXISTS idx_articles_app_id ON articles(app_id)`,
+        `CREATE INDEX IF NOT EXISTS idx_articles_created_at ON articles(created_at)`,
       ];
 
       if (isNeonDatabase(connectionString)) {
@@ -433,14 +470,28 @@ export async function getAppById(id: string): Promise<AppItem | null> {
       .where(or(eq(appsTable.id, rawId), eq(appsTable.id, decodedId)))
       .limit(1);
 
+    let app: AppItem | null = null;
     if (rows && rows.length > 0) {
-      return rowToApp(rows[0]);
+      app = rowToApp(rows[0]);
+    } else {
+      app = await getAppByDomain(decodedId);
     }
 
-    const byDomain = await getAppByDomain(decodedId);
-    if (byDomain) return byDomain;
+    if (!app) return null;
 
-    return null;
+    // Enrich with subpages and articles
+    try {
+      const [subpages, articles] = await Promise.all([
+        getSubpagesByAppId(app.id),
+        getArticlesByAppId(app.id),
+      ]);
+      app.subpages = subpages;
+      app.articles = articles;
+    } catch (enrichErr) {
+      console.warn("Failed to enrich app with subpages/articles:", enrichErr);
+    }
+
+    return app;
   } catch (err) {
     console.error("Error in getAppById:", err);
     return null;
@@ -702,6 +753,337 @@ export async function insertReview(review: ReviewItem): Promise<ReviewItem> {
   } catch (err) {
     console.error("Error in insertReview:", err);
     throw err;
+  }
+}
+
+export async function getSubpagesByAppId(appId: string): Promise<SubpageItem[]> {
+  try {
+    const database = getDb();
+    if (!database) return [];
+    await ensureTablesInitialized();
+
+    const rows = await (database as NeonHttpDatabase<typeof schema>)
+      .select()
+      .from(subpagesTable)
+      .where(eq(subpagesTable.app_id, appId))
+      .orderBy(desc(subpagesTable.created_at));
+
+    return rows.map((r) => ({
+      id: r.id,
+      app_id: r.app_id,
+      url: r.url,
+      path: r.path,
+      title: r.title,
+      description: r.description || "",
+      screenshot: r.screenshot,
+      screenshots: parseJsonArray<string>(r.screenshots, []),
+      label: r.label,
+      is_meaningful: Boolean(r.is_meaningful),
+      article_id: r.article_id || undefined,
+      created_at: Number(r.created_at),
+    }));
+  } catch (err) {
+    console.error("Error in getSubpagesByAppId:", err);
+    return [];
+  }
+}
+
+export async function getSubpageByUrl(url: string): Promise<SubpageItem | null> {
+  try {
+    const database = getDb();
+    if (!database) return null;
+    await ensureTablesInitialized();
+
+    const rows = await (database as NeonHttpDatabase<typeof schema>)
+      .select()
+      .from(subpagesTable)
+      .where(eq(subpagesTable.url, url))
+      .limit(1);
+
+    if (!rows || rows.length === 0) return null;
+    const r = rows[0];
+    return {
+      id: r.id,
+      app_id: r.app_id,
+      url: r.url,
+      path: r.path,
+      title: r.title,
+      description: r.description || "",
+      screenshot: r.screenshot,
+      screenshots: parseJsonArray<string>(r.screenshots, []),
+      label: r.label,
+      is_meaningful: Boolean(r.is_meaningful),
+      article_id: r.article_id || undefined,
+      created_at: Number(r.created_at),
+    };
+  } catch (err) {
+    console.error("Error in getSubpageByUrl:", err);
+    return null;
+  }
+}
+
+export async function insertSubpage(subpage: SubpageItem): Promise<SubpageItem> {
+  const values: schema.SubpageInsert = {
+    id: subpage.id,
+    app_id: subpage.app_id,
+    url: subpage.url,
+    path: subpage.path,
+    title: subpage.title,
+    description: subpage.description || "",
+    screenshot: subpage.screenshot,
+    screenshots: JSON.stringify(subpage.screenshots || []),
+    label: subpage.label || "核心页面",
+    is_meaningful: subpage.is_meaningful ?? true,
+    article_id: subpage.article_id || null,
+    created_at: subpage.created_at || Date.now(),
+  };
+
+  try {
+    const database = getDb();
+    if (!database) {
+      throw new Error("DATABASE_URL is not set or DB uninitialized.");
+    }
+    await ensureTablesInitialized();
+
+    await (database as NeonHttpDatabase<typeof schema>)
+      .insert(subpagesTable)
+      .values(values)
+      .onConflictDoUpdate({
+        target: subpagesTable.id,
+        set: {
+          title: values.title,
+          description: values.description,
+          screenshot: values.screenshot,
+          screenshots: values.screenshots,
+          label: values.label,
+          is_meaningful: values.is_meaningful,
+          article_id: values.article_id,
+        },
+      });
+
+    return subpage;
+  } catch (err) {
+    console.error("Error in insertSubpage:", err);
+    throw err;
+  }
+}
+
+export async function getArticlesByAppId(appId: string): Promise<ArticleItem[]> {
+  try {
+    const database = getDb();
+    if (!database) return [];
+    await ensureTablesInitialized();
+
+    const rows = await (database as NeonHttpDatabase<typeof schema>)
+      .select()
+      .from(articlesTable)
+      .where(eq(articlesTable.app_id, appId))
+      .orderBy(desc(articlesTable.created_at));
+
+    return rows.map((r) => ({
+      id: r.id,
+      app_id: r.app_id,
+      slug: r.slug || undefined,
+      title: r.title,
+      summary: r.summary || "",
+      tag: r.tag,
+      content: r.content,
+      cover_image: r.cover_image || "",
+      github_url: r.github_url || undefined,
+      x_url: r.x_url || undefined,
+      source_url: r.source_url || undefined,
+      author: r.author,
+      read_time: r.read_time,
+      views: Number(r.views || 0),
+      likes: Number(r.likes || 0),
+      created_at: Number(r.created_at),
+      updated_at: Number(r.updated_at),
+    }));
+  } catch (err) {
+    console.error("Error in getArticlesByAppId:", err);
+    return [];
+  }
+}
+
+export async function getArticleById(id: string): Promise<ArticleItem | null> {
+  try {
+    const database = getDb();
+    if (!database) return null;
+    await ensureTablesInitialized();
+
+    const rows = await (database as NeonHttpDatabase<typeof schema>)
+      .select()
+      .from(articlesTable)
+      .where(or(eq(articlesTable.id, id), eq(articlesTable.slug, id)))
+      .limit(1);
+
+    if (!rows || rows.length === 0) return null;
+    const r = rows[0];
+    const article: ArticleItem = {
+      id: r.id,
+      app_id: r.app_id,
+      slug: r.slug || undefined,
+      title: r.title,
+      summary: r.summary || "",
+      tag: r.tag,
+      content: r.content,
+      cover_image: r.cover_image || "",
+      github_url: r.github_url || undefined,
+      x_url: r.x_url || undefined,
+      source_url: r.source_url || undefined,
+      author: r.author,
+      read_time: r.read_time,
+      views: Number(r.views || 0),
+      likes: Number(r.likes || 0),
+      created_at: Number(r.created_at),
+      updated_at: Number(r.updated_at),
+    };
+
+    // Attach app
+    try {
+      const app = await getAppById(r.app_id);
+      if (app) article.app = app;
+    } catch {
+      // ignore app fetch err
+    }
+
+    return article;
+  } catch (err) {
+    console.error("Error in getArticleById:", err);
+    return null;
+  }
+}
+
+export async function getAllArticles(limit = 20): Promise<ArticleItem[]> {
+  try {
+    const database = getDb();
+    if (!database) return [];
+    await ensureTablesInitialized();
+
+    const rows = await (database as NeonHttpDatabase<typeof schema>)
+      .select()
+      .from(articlesTable)
+      .orderBy(desc(articlesTable.created_at))
+      .limit(limit);
+
+    return rows.map((r) => ({
+      id: r.id,
+      app_id: r.app_id,
+      slug: r.slug || undefined,
+      title: r.title,
+      summary: r.summary || "",
+      tag: r.tag,
+      content: r.content,
+      cover_image: r.cover_image || "",
+      github_url: r.github_url || undefined,
+      x_url: r.x_url || undefined,
+      source_url: r.source_url || undefined,
+      author: r.author,
+      read_time: r.read_time,
+      views: Number(r.views || 0),
+      likes: Number(r.likes || 0),
+      created_at: Number(r.created_at),
+      updated_at: Number(r.updated_at),
+    }));
+  } catch (err) {
+    console.error("Error in getAllArticles:", err);
+    return [];
+  }
+}
+
+export async function insertArticle(article: ArticleItem): Promise<ArticleItem> {
+  const now = Date.now();
+  const values: schema.ArticleInsert = {
+    id: article.id,
+    app_id: article.app_id,
+    slug: article.slug || null,
+    title: article.title,
+    summary: article.summary || "",
+    tag: article.tag || "精选推荐",
+    content: article.content,
+    cover_image: article.cover_image || "",
+    github_url: article.github_url || null,
+    x_url: article.x_url || null,
+    source_url: article.source_url || null,
+    author: article.author || "AppStore 精选编辑部",
+    read_time: article.read_time || "3 分钟阅读",
+    views: article.views || 0,
+    likes: article.likes || 0,
+    created_at: article.created_at || now,
+    updated_at: article.updated_at || now,
+  };
+
+  try {
+    const database = getDb();
+    if (!database) {
+      throw new Error("DATABASE_URL is not set or DB uninitialized.");
+    }
+    await ensureTablesInitialized();
+
+    await (database as NeonHttpDatabase<typeof schema>)
+      .insert(articlesTable)
+      .values(values)
+      .onConflictDoUpdate({
+        target: articlesTable.id,
+        set: {
+          title: values.title,
+          summary: values.summary,
+          tag: values.tag,
+          content: values.content,
+          cover_image: values.cover_image,
+          github_url: values.github_url,
+          x_url: values.x_url,
+          source_url: values.source_url,
+          author: values.author,
+          read_time: values.read_time,
+          views: values.views,
+          likes: values.likes,
+          updated_at: values.updated_at,
+        },
+      });
+
+    return article;
+  } catch (err) {
+    console.error("Error in insertArticle:", err);
+    throw err;
+  }
+}
+
+export async function updateApp(
+  id: string,
+  partial: Partial<AppItem>
+): Promise<AppItem | null> {
+  try {
+    const database = getDb();
+    if (!database) return null;
+    await ensureTablesInitialized();
+
+    const setObj: Record<string, unknown> = {
+      updated_at: Date.now(),
+    };
+    if (partial.name !== undefined) setObj.name = partial.name;
+    if (partial.tagline !== undefined) setObj.tagline = partial.tagline;
+    if (partial.description !== undefined) setObj.description = partial.description;
+    if (partial.cover_url !== undefined) setObj.cover_url = partial.cover_url;
+    if (partial.related_topics !== undefined) {
+      setObj.related_topics = JSON.stringify(partial.related_topics);
+    }
+    if (partial.preview_features !== undefined) {
+      setObj.preview_features = JSON.stringify(partial.preview_features);
+    }
+    if (partial.screenshots !== undefined) {
+      setObj.screenshots = JSON.stringify(partial.screenshots);
+    }
+
+    await (database as NeonHttpDatabase<typeof schema>)
+      .update(appsTable)
+      .set(setObj)
+      .where(eq(appsTable.id, id));
+
+    return getAppById(id);
+  } catch (err) {
+    console.error("Error in updateApp:", err);
+    return null;
   }
 }
 

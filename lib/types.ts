@@ -46,11 +46,16 @@ export interface AppItem {
     title: string;
     desc: string;
     image: string;
+    article_id?: string;
+    github_url?: string;
+    x_url?: string;
   }>;
   featured: boolean;
   trending: boolean;
   created_at: number;
   updated_at: number;
+  subpages?: SubpageItem[];
+  articles?: ArticleItem[];
 }
 
 export interface ReviewItem {
@@ -69,6 +74,42 @@ export interface CategoryItem {
   icon?: string;
   sort_order?: number;
   created_at?: number;
+}
+
+export interface SubpageItem {
+  id: string;
+  app_id: string;
+  url: string;
+  path: string;
+  title: string;
+  description: string;
+  screenshot: string;
+  screenshots?: string[];
+  label: string;
+  is_meaningful: boolean;
+  article_id?: string;
+  created_at: number;
+}
+
+export interface ArticleItem {
+  id: string;
+  app_id: string;
+  slug?: string;
+  title: string;
+  summary: string;
+  tag: string;
+  content: string;
+  cover_image: string;
+  github_url?: string;
+  x_url?: string;
+  source_url?: string;
+  author: string;
+  read_time: string;
+  views: number;
+  likes: number;
+  created_at: number;
+  updated_at: number;
+  app?: AppItem;
 }
 
 

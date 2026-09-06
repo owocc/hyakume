@@ -20,6 +20,8 @@ export interface CrawlResult {
   screenshotBuffer?: Uint8Array;
   deviceScreenshots?: DeviceScreenshots;
   usedSeoImage: boolean;
+  githubUrl?: string;
+  xUrl?: string;
 }
 
 export const DEVICE_VIEWPORTS = {
@@ -157,10 +159,33 @@ function parseHtmlMetadata(html: string, baseUrl: string) {
     .replace(/<[^>]+>/g, " ")
     .replace(/\s+/g, " ")
     .trim();
-
   const text = cleanHtml.slice(0, 3000);
 
-  return { title, description, seoImage, iconUrl, text, primaryColor };
+  // Extract GitHub URL if present
+  let githubUrl: string | undefined;
+  if (parsedUrl.hostname.includes("github.com")) {
+    const match = parsedUrl.pathname.match(/^\/([a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+)/);
+    if (match) githubUrl = `https://github.com/${match[1]}`;
+  } else {
+    const ghMatch = html.match(/https?:\/\/(?:www\.)?github\.com\/([a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+)(?:[/"'>\s]|$)/i);
+    if (ghMatch && !ghMatch[1].startsWith("login") && !ghMatch[1].startsWith("signup") && !ghMatch[1].startsWith("features") && !ghMatch[1].startsWith("pricing")) {
+      githubUrl = `https://github.com/${ghMatch[1].replace(/[/"'>\s].*$/, "")}`;
+    }
+  }
+
+  // Extract X (Twitter) URL if present
+  let xUrl: string | undefined;
+  if (parsedUrl.hostname.includes("x.com") || parsedUrl.hostname.includes("twitter.com")) {
+    const match = parsedUrl.pathname.match(/^\/([a-zA-Z0-9_]+(?:\/status\/\d+)?)/);
+    if (match) xUrl = `https://x.com/${match[1]}`;
+  } else {
+    const xMatch = html.match(/https?:\/\/(?:www\.)?(?:twitter\.com|x\.com)\/([a-zA-Z0-9_]+(?:\/status\/\d+)?)(?:[/"'>\s]|$)/i);
+    if (xMatch && !xMatch[1].startsWith("home") && !xMatch[1].startsWith("explore") && !xMatch[1].startsWith("search") && !xMatch[1].startsWith("intent")) {
+      xUrl = `https://x.com/${xMatch[1].replace(/[/"'>\s].*$/, "")}`;
+    }
+  }
+
+  return { title, description, seoImage, iconUrl, text, primaryColor, githubUrl, xUrl };
 }
 
 /**
@@ -169,7 +194,10 @@ function parseHtmlMetadata(html: string, baseUrl: string) {
  * 2. If SEO image exists: use SEO image as cover directly (saves space in R2)
  * 3. If NO SEO image: takes 16:9 screenshot, uploads to Cloudflare R2, returns R2 URL
  */
-export async function crawlWebsite(targetUrl: string): Promise<CrawlResult> {
+export async function crawlWebsite(
+  targetUrl: string,
+  options?: { isSubpage?: boolean }
+): Promise<CrawlResult> {
   const url = normalizeUrl(targetUrl);
   const parsedUrl = new URL(url);
   const env = await getCloudflareEnv();
@@ -184,7 +212,17 @@ export async function crawlWebsite(targetUrl: string): Promise<CrawlResult> {
   let tabletScreenshotBuffer: Uint8Array | undefined;
   let mobileScreenshotBuffer: Uint8Array | undefined;
   let primaryColor: string | undefined;
+  let githubUrl: string | undefined;
+  let xUrl: string | undefined;
 
+  if (parsedUrl.hostname.includes("github.com")) {
+    const match = parsedUrl.pathname.match(/^\/([a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+)/);
+    if (match) githubUrl = `https://github.com/${match[1]}`;
+  }
+  if (parsedUrl.hostname.includes("x.com") || parsedUrl.hostname.includes("twitter.com")) {
+    const match = parsedUrl.pathname.match(/^\/([a-zA-Z0-9_]+(?:\/status\/\d+)?)/);
+    if (match) xUrl = `https://x.com/${match[1]}`;
+  }
   // 1. Try Cloudflare Browser Rendering if MYBROWSER binding is present (with 15s timeout)
   if (env && env.MYBROWSER) {
     try {
@@ -274,7 +312,32 @@ export async function crawlWebsite(targetUrl: string): Promise<CrawlResult> {
                 detectedColor = col;
               }
             }
-            return { ogTitle, ogDesc, ogImg, icon, bodyText: bodyText.slice(0, 3000), detectedColor };
+            let extractedGh: string | undefined;
+            const ghA = document.querySelector('a[href*="github.com/"]');
+            if (ghA && ghA.getAttribute("href")) {
+              const h = ghA.getAttribute("href") || "";
+              if (!h.includes("/login") && !h.includes("/signup") && !h.includes("/features")) {
+                extractedGh = h;
+              }
+            }
+            let extractedX: string | undefined;
+            const xA = document.querySelector('a[href*="x.com/"], a[href*="twitter.com/"]');
+            if (xA && xA.getAttribute("href")) {
+              const h = xA.getAttribute("href") || "";
+              if (!h.includes("/intent/") && !h.includes("/share")) {
+                extractedX = h;
+              }
+            }
+            return {
+              ogTitle,
+              ogDesc,
+              ogImg,
+              icon,
+              bodyText: bodyText.slice(0, 3000),
+              detectedColor,
+              extractedGh,
+              extractedX,
+            };
           });
 
           // Capture PC screenshot
@@ -351,7 +414,12 @@ export async function crawlWebsite(targetUrl: string): Promise<CrawlResult> {
           // keep fallback
         }
       }
-      pcScreenshotBuffer = rawPcScreenshot;
+      if (metadata.extractedGh && !githubUrl) {
+        githubUrl = metadata.extractedGh;
+      }
+      if (metadata.extractedX && !xUrl) {
+        xUrl = metadata.extractedX;
+      }
       tabletScreenshotBuffer = rawTabletScreenshot;
       mobileScreenshotBuffer = rawMobileScreenshot;
       screenshotBuffer = rawPcScreenshot;
@@ -382,12 +450,17 @@ export async function crawlWebsite(targetUrl: string): Promise<CrawlResult> {
         if (parsed.primaryColor) {
           primaryColor = parsed.primaryColor;
         }
+        if (parsed.githubUrl && !githubUrl) {
+          githubUrl = parsed.githubUrl;
+        }
+        if (parsed.xUrl && !xUrl) {
+          xUrl = parsed.xUrl;
+        }
       }
     } catch (fetchErr) {
       console.error("Failed to fetch webpage HTML:", fetchErr);
     }
   }
-
   // Fallback title if still empty
   if (!title) {
     title = parsedUrl.hostname.replace(/^www\./, "");
@@ -398,7 +471,14 @@ export async function crawlWebsite(targetUrl: string): Promise<CrawlResult> {
   let tabletScreenshotUrl: string | undefined;
   let mobileScreenshotUrl: string | undefined;
 
-  const fileSlug = parsedUrl.hostname.replace(/[^a-zA-Z0-9]/g, "-");
+  const isSub = Boolean(options?.isSubpage);
+  const cleanPath = (parsedUrl.pathname || "")
+    .replace(/[^a-zA-Z0-9]/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 30);
+  const fileSlug = isSub && cleanPath
+    ? `${parsedUrl.hostname.replace(/[^a-zA-Z0-9]/g, "-")}-sub-${cleanPath}`
+    : parsedUrl.hostname.replace(/[^a-zA-Z0-9]/g, "-");
   const timestamp = Date.now();
 
   const uploadTasks: Promise<{ type: "pc" | "tablet" | "mobile"; url: string } | null>[] = [];
@@ -509,5 +589,7 @@ export async function crawlWebsite(targetUrl: string): Promise<CrawlResult> {
     screenshotBuffer,
     deviceScreenshots,
     usedSeoImage,
+    githubUrl,
+    xUrl,
   };
 }
