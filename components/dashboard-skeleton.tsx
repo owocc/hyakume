@@ -184,7 +184,7 @@ export function DashboardSkeleton() {
       </div>
 
       {/* Main Workspace: Sidebar + Content */}
-      <div className="flex-1 flex flex-col md:flex-row w-full max-w-[1440px] mx-auto">
+      <div className="flex-1 flex flex-col md:flex-row w-full">
         {/* Left Sidebar Skeleton */}
         <aside className="hidden md:flex w-64 min-w-[16rem] sticky top-0 h-screen bg-white dark:bg-card border-r border-neutral-200/70 dark:border-neutral-800 flex-col justify-between p-5">
           <div className="space-y-6">

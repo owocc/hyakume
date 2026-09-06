@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo, Suspense } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession, signOut } from "@/lib/auth-client";
+import { useTranslations } from "next-intl";
 import { Footer } from "@/components/footer";
 import {
   BarChart3,
@@ -36,6 +37,7 @@ import {
   ArticlesTabSkeleton,
   AppsTabSkeleton,
 } from "@/components/dashboard-skeleton";
+import { Skeleton } from "@/components/skeleton";
 // Illustration header pastel gradient backgrounds
 const PASTEL_GRADIENTS = [
   "from-pink-100 via-rose-50 to-amber-50 dark:from-pink-950/40 dark:via-rose-900/30 dark:to-amber-950/20",
@@ -73,6 +75,7 @@ interface PublicationsResponse {
 
 function DashboardContent() {
   const router = useRouter();
+  const t = useTranslations("dashboard");
   const { data: session, isPending: sessionLoading } = useSession();
 
   const [activeNav, setActiveNav] = useState<ActiveTab>("dashboard");
@@ -101,7 +104,7 @@ function DashboardContent() {
       const res = await fetch(`/api/articles/${articleId}`, { method: "DELETE" });
       const json = (await res.json()) as { success?: boolean; error?: string };
       if (json.success) {
-        fetchPublications(scope);
+        fetchPublications(scope, { silent: true });
       } else {
         alert(json.error || "删除失败");
       }
@@ -118,9 +121,11 @@ function DashboardContent() {
   }, [sessionLoading, session, router]);
 
   // Load user publications
-  const fetchPublications = async (targetScope: Scope) => {
+  const fetchPublications = async (targetScope: Scope, options?: { silent?: boolean }) => {
     try {
-      setLoading(true);
+      if (!options?.silent) {
+        setLoading(true);
+      }
       const res = await fetch(`/api/user/publications?scope=${targetScope}`);
       if (res.status === 401) {
         router.push(`/login?redirect=${encodeURIComponent("/dashboard")}`);
@@ -133,30 +138,48 @@ function DashboardContent() {
     } catch (err) {
       console.error("Failed to load publications:", err);
     } finally {
-      setLoading(false);
+      if (!options?.silent) {
+        setLoading(false);
+      }
     }
   };
 
   useEffect(() => {
     if (session?.user) {
-      fetchPublications(scope);
+      // If data is already present, refresh silently without showing full skeleton
+      fetchPublications(scope, { silent: Boolean(data) });
     }
   }, [session, scope]);
 
   // Fetch user ongoing pipeline tasks
-  const fetchTasks = async () => {
+  const fetchTasks = async (options?: { silent?: boolean }) => {
     try {
+      if (!options?.silent) {
+        setTasksLoading(true);
+      }
       const res = await fetch("/api/user/tasks");
       if (res.ok) {
         const json = (await res.json()) as { success: boolean; tasks: PipelineTaskItem[] };
         if (json.success && Array.isArray(json.tasks)) {
-          setTasks(json.tasks);
+          setTasks((prevTasks) => {
+            // If any active task transitioned from processing to completed, refresh publications silently!
+            const hasNewlyCompleted = json.tasks.some((newTask) => {
+              const old = prevTasks.find((p) => p.id === newTask.id);
+              return old?.status === "processing" && newTask.status === "completed";
+            });
+            if (hasNewlyCompleted) {
+              fetchPublications(scope, { silent: true });
+            }
+            return json.tasks;
+          });
         }
       }
     } catch (err) {
       console.error("Failed to fetch tasks:", err);
     } finally {
-      setTasksLoading(false);
+      if (!options?.silent) {
+        setTasksLoading(false);
+      }
     }
   };
 
@@ -166,14 +189,13 @@ function DashboardContent() {
     }
   }, [session]);
 
-  // Auto poll active tasks every 3.5s
+  // Auto poll active tasks every 3.5s silently in the background (no skeleton, smooth re-render)
   useEffect(() => {
     const hasActive = tasks.some((t) => t.status === "processing");
     if (!hasActive) return;
 
     const timer = setInterval(() => {
-      fetchTasks();
-      fetchPublications(scope);
+      fetchTasks({ silent: true });
     }, 3500);
 
     return () => clearInterval(timer);
@@ -253,13 +275,13 @@ function DashboardContent() {
   const navItems = [
     {
       key: "dashboard",
-      label: "数据概览 (Dashboard)",
+      label: t("navOverview"),
       icon: BarChart3,
       count: null,
-      activeBadge: activeTasks.length > 0 ? `${activeTasks.length} 进行中` : null,
+      activeBadge: activeTasks.length > 0 ? t("inProgress", { count: activeTasks.length }) : null,
     },
-    { key: "articles", label: "我的文章 (Articles)", icon: FileText, count: data?.counts?.articles || 0, activeBadge: null },
-    { key: "apps", label: "推荐应用 (Apps)", icon: AppWindow, count: data?.counts?.apps || 0, activeBadge: null },
+    { key: "articles", label: t("navArticles"), icon: FileText, count: data?.counts?.articles || 0, activeBadge: null },
+    { key: "apps", label: t("navApps"), icon: AppWindow, count: data?.counts?.apps || 0, activeBadge: null },
   ] as const;
 
   return (
@@ -276,10 +298,10 @@ function DashboardContent() {
           </button>
           <span className="font-bold text-base tracking-tight text-neutral-900 dark:text-neutral-100">
             {activeNav === "dashboard"
-              ? "控制台概览"
+              ? t("navOverview")
               : activeNav === "articles"
-              ? "我的文章"
-              : "推荐应用"}
+              ? t("navArticles")
+              : t("navApps")}
           </span>
         </div>
 
@@ -293,7 +315,7 @@ function DashboardContent() {
       </div>
 
       {/* Main Workspace: Sidebar + Content Area */}
-      <div className="flex-1 flex flex-col md:flex-row w-full max-w-[1440px] mx-auto">
+      <div className="flex-1 flex flex-col md:flex-row w-full">
         {/* 
           ========================================================================
           LEFT SIDEBAR:
@@ -312,7 +334,7 @@ function DashboardContent() {
             {/* Mobile close button */}
             <div className="flex md:hidden items-center justify-between pb-2 border-b border-border">
               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                控制中心
+                {t("controlCenter")}
               </span>
               <button
                 onClick={() => setMobileSidebarOpen(false)}
@@ -369,21 +391,21 @@ function DashboardContent() {
                       }
                     `}
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
                       <Icon
-                        className={`w-4 h-4 transition-colors ${
+                        className={`w-4 h-4 shrink-0 transition-colors ${
                           isActive
                             ? "text-rose-500 dark:text-rose-400"
                             : "text-neutral-400 dark:text-neutral-500 group-hover:text-neutral-700 dark:group-hover:text-neutral-300"
                         }`}
                       />
-                      <span>{item.label}</span>
+                      <span className="truncate">{item.label}</span>
                     </div>
 
                     {/* Active indicator bar or count */}
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 shrink-0">
                       {item.activeBadge && (
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-500 text-white font-bold animate-pulse shadow-2xs">
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-500 text-white font-bold animate-pulse shadow-2xs whitespace-nowrap">
                           {item.activeBadge}
                         </span>
                       )}
@@ -414,8 +436,8 @@ function DashboardContent() {
               href="/"
               className="w-full flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-100/70 dark:hover:bg-neutral-800/60 transition"
             >
-              <Globe className="w-4 h-4 text-neutral-400" />
-              <span>返回应用商店</span>
+              <Globe className="w-4 h-4 text-neutral-400 shrink-0" />
+              <span>{t("backToStore")}</span>
             </Link>
 
             <button
@@ -423,8 +445,8 @@ function DashboardContent() {
               onClick={() => alert("个人设置面板开发中")}
               className="w-full flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-100/70 dark:hover:bg-neutral-800/60 transition cursor-pointer"
             >
-              <Settings className="w-4 h-4 text-neutral-400" />
-              <span>设置 (Settings)</span>
+              <Settings className="w-4 h-4 text-neutral-400 shrink-0" />
+              <span>{t("settings")}</span>
             </button>
 
             <button
@@ -432,8 +454,8 @@ function DashboardContent() {
               onClick={handleLogout}
               className="w-full flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition cursor-pointer"
             >
-              <LogOut className="w-4 h-4 text-red-500" />
-              <span>退出登录 (Logout)</span>
+              <LogOut className="w-4 h-4 text-red-500 shrink-0" />
+              <span>{t("logout")}</span>
             </button>
           </div>
         </aside>
@@ -678,7 +700,18 @@ function DashboardContent() {
                   </Link>
                 </div>
 
-                {tasks.length === 0 ? (
+                {tasksLoading && tasks.length === 0 ? (
+                  <div className="p-5 rounded-2xl bg-white dark:bg-card border border-neutral-200/80 dark:border-neutral-800 shadow-2xs space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <Skeleton className="w-4 h-4 rounded" />
+                        <Skeleton className="h-4 w-48 rounded" />
+                      </div>
+                      <Skeleton className="h-4 w-20 rounded-full" />
+                    </div>
+                    <Skeleton className="h-2 w-full rounded-full" />
+                  </div>
+                ) : tasks.length === 0 ? (
                   <div className="p-5 rounded-2xl bg-white dark:bg-card border border-dashed border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-neutral-400 flex items-center justify-center">
@@ -1160,7 +1193,7 @@ function DashboardContent() {
                         : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800"
                     }`}
                   >
-                    <span>平台公共应用库 (System)</span>
+                    <span>平台公共应用库</span>
                   </button>
                 </div>
 

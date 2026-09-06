@@ -185,5 +185,15 @@
     "previewMobile": "手机端",
     "previewMultiDevice": "PC · 平板 · 手机三端预览",
     "recommendedApps": "相关应用推荐"
+  },
+  "dashboard": {
+    "navOverview": "数据概览",
+    "navArticles": "我的文章",
+    "navApps": "推荐应用",
+    "inProgress": "{count} 进行中",
+    "controlCenter": "控制中心",
+    "backToStore": "返回应用商店",
+    "settings": "设置",
+    "logout": "退出登录"
   }
 }

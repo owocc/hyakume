@@ -185,5 +185,15 @@
     "previewMobile": "Mobile",
     "previewMultiDevice": "PC · Tablet · Mobile Previews",
     "recommendedApps": "Recommended Apps"
+  },
+  "dashboard": {
+    "navOverview": "Dashboard",
+    "navArticles": "Articles",
+    "navApps": "Apps",
+    "inProgress": "{count} Active",
+    "controlCenter": "Control Center",
+    "backToStore": "Back to Store",
+    "settings": "Settings",
+    "logout": "Log Out"
   }
 }
