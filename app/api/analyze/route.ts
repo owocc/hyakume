@@ -138,56 +138,13 @@ export async function POST(request: Request) {
       }
 
       // Case B: Main site URL submitted and already in DB
+      // Fast return: do NOT re-crawl or block on LLM; return existing app state immediately
       const [existingArticles, existingSubpages] = await Promise.all([
         getArticlesByAppId(existingApp.id),
         getSubpagesByAppId(existingApp.id),
       ]);
 
-      let primaryArticle = existingArticles[0] || null;
-
-      // If app has no article yet, auto generate one
-      if (!primaryArticle) {
-        try {
-          const crawlResult = await crawlWebsite(target);
-          const analysis = await analyzeAndGenerateArticle(crawlResult, existingApp);
-          if (analysis.is_meaningful) {
-            const artId = "art_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-            primaryArticle = {
-              id: artId,
-              app_id: existingApp.id,
-              slug: `${existingApp.id}-${Date.now().toString(36)}`,
-              title: analysis.title,
-              summary: analysis.summary,
-              tag: analysis.tag,
-              content: analysis.content,
-              cover_image: existingApp.cover_url,
-              github_url: analysis.github_url || crawlResult.githubUrl,
-              x_url: analysis.x_url || crawlResult.xUrl,
-              source_url: target,
-              author: analysis.author,
-              read_time: "3 分钟阅读",
-              views: 0,
-              likes: 0,
-              created_at: Date.now(),
-              updated_at: Date.now(),
-            };
-            await insertArticle(primaryArticle);
-            const newTopic = {
-              tag: primaryArticle.tag,
-              title: primaryArticle.title,
-              desc: primaryArticle.summary,
-              image: primaryArticle.cover_image,
-              article_id: primaryArticle.id,
-              github_url: primaryArticle.github_url,
-              x_url: primaryArticle.x_url,
-            };
-            await updateApp(existingApp.id, { related_topics: [newTopic] });
-          }
-        } catch (err) {
-          console.warn("Auto article generation on existing app fallback:", err);
-        }
-      }
-
+      const primaryArticle = existingArticles[0] || null;
       const refreshedApp = await getAppById(existingApp.id);
 
       return Response.json({

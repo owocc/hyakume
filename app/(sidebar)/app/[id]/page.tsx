@@ -16,8 +16,10 @@ export default async function AppDetailPage({ params }: Props) {
     notFound();
   }
 
-  const reviews = await getReviews(id);
-  const allApps = await getAllApps();
+  const [reviews, allApps] = await Promise.all([
+    getReviews(id),
+    getAllApps(),
+  ]);
   const targetDomain = extractDomain(app.url || app.id).cleanDomain;
   const otherApps = allApps.filter((a) => {
     if (a.id === app.id) return false;

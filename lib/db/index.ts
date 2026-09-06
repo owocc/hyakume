@@ -26,7 +26,7 @@ let poolInstance: pg.Pool | null = null;
 let neonSqlInstance: NeonQueryFunction<false, false> | null = null;
 let dbInstance: DrizzleDatabase | null = null;
 let initializationPromise: Promise<void> | null = null;
-
+let tablesInitialized = false;
 function isNeonDatabase(url: string): boolean {
   return url.includes("neon.tech") || url.includes("neondb");
 }
@@ -199,6 +199,7 @@ function rowToApp(row: schema.AppSelect | Record<string, unknown>): AppItem {
 }
 
 export async function ensureTablesInitialized(): Promise<void> {
+  if (tablesInitialized) return;
   if (initializationPromise) return initializationPromise;
 
   const connectionString = getDatabaseUrl();
@@ -307,6 +308,16 @@ export async function ensureTablesInitialized(): Promise<void> {
         if (!neonSqlInstance) {
           neonSqlInstance = neon(connectionString);
         }
+        try {
+          const [check] = (await neonSqlInstance`SELECT to_regclass('public.app_subpages') as exists;`) as Array<{ exists?: string }>;
+          if (check?.exists) {
+            tablesInitialized = true;
+            return;
+          }
+        } catch {
+          // continue to initialize
+        }
+
         for (const stmt of initStatements) {
           await neonSqlInstance.query(stmt);
         }
@@ -318,6 +329,7 @@ export async function ensureTablesInitialized(): Promise<void> {
             [cat.id, cat.name, cat.icon || "", cat.sort_order || 0, Date.now()]
           );
         }
+        tablesInitialized = true;
         return;
       }
 
@@ -326,6 +338,16 @@ export async function ensureTablesInitialized(): Promise<void> {
 
       const client = await pool.connect();
       try {
+        try {
+          const checkRes = await client.query("SELECT to_regclass('public.app_subpages') as exists;");
+          if (checkRes.rows[0]?.exists) {
+            tablesInitialized = true;
+            return;
+          }
+        } catch {
+          // continue to initialize
+        }
+
         for (const stmt of initStatements) {
           await client.query(stmt);
         }
@@ -337,6 +359,7 @@ export async function ensureTablesInitialized(): Promise<void> {
             [cat.id, cat.name, cat.icon || "", cat.sort_order || 0, Date.now()]
           );
         }
+        tablesInitialized = true;
       } finally {
         client.release();
       }
