@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import {
   Share2,
   ExternalLink,
   Check,
+  ChevronDown,
+  RotateCcw,
   UserCheck,
   UserX,
   X,
@@ -52,9 +54,21 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState<number | null>(null);
   const [failedImages, setFailedImages] = useState<Record<number, boolean>>({});
+  const [showActionMenu, setShowActionMenu] = useState(false);
+  const actionMenuRef = useRef<HTMLDivElement>(null);
+
+  // Click outside to close action dropdown menu
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (actionMenuRef.current && !actionMenuRef.current.contains(e.target as Node)) {
+        setShowActionMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const tCommon = useTranslations("common");
-
   // Accurate rating statistics derived from database reviews & app data
   const totalRatingsCount =
     reviews.length > 0
@@ -282,26 +296,75 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
             </div>
           </div>
 
-          {/* Action CTAs */}
+          {/* Action CTAs: Unified Button Group with dropdown */}
           <div className="flex flex-wrap items-center gap-3 w-full md:w-auto shrink-0 pt-2 md:pt-0">
-            <a
-              href={app.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 md:flex-none px-7 py-2.5 rounded-full bg-white text-black hover:bg-neutral-100 font-bold text-sm shadow-xl transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
+            {/* Split Button Group: Visit Website + Dropdown Menu */}
+            <div
+              ref={actionMenuRef}
+              className="relative inline-flex items-center rounded-full bg-white text-black shadow-xl border border-white/20 p-1"
             >
-              <span>{t("visitWebsite")}</span>
-              <ExternalLink className="w-4 h-4 stroke-[2.5]" />
-            </a>
+              {/* Main Action: Visit Website */}
+              <a
+                href={app.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-5 sm:px-6 py-2 rounded-full font-bold text-xs sm:text-sm hover:bg-neutral-100 active:scale-95 transition-all flex items-center gap-2"
+              >
+                <span>{t("visitWebsite")}</span>
+                <ExternalLink className="w-3.5 h-3.5 stroke-[2.5]" />
+              </a>
 
-            <Link
-              href={`/article/generate?appId=${app.id}`}
-              className="px-5 py-2.5 rounded-full bg-rose-500 hover:bg-rose-600 text-white font-bold text-sm shadow-xl transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2 border border-rose-400"
-            >
-              <Sparkles className="w-4 h-4" />
-              <span>撰写专属文章</span>
-            </Link>
+              {/* Dropdown Menu Toggle on the Right */}
+              <button
+                type="button"
+                onClick={() => setShowActionMenu(!showActionMenu)}
+                className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors cursor-pointer border-l border-neutral-200 ${
+                  showActionMenu ? "bg-neutral-200 text-black" : "hover:bg-neutral-100 text-neutral-700"
+                }`}
+                title="更多操作"
+                aria-label="更多操作"
+                aria-expanded={showActionMenu}
+              >
+                <ChevronDown
+                  className={`w-4 h-4 transition-transform duration-200 ${
+                    showActionMenu ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
 
+              {/* Expanded Dropdown Popover */}
+              {showActionMenu && (
+                <div className="absolute right-0 top-full mt-2 w-56 p-1.5 rounded-2xl bg-neutral-900/95 backdrop-blur-xl border border-neutral-700/80 shadow-2xl text-white z-40 space-y-1 animate-in fade-in-50 zoom-in-95 duration-150">
+                  <Link
+                    href={`/article/generate?appId=${app.id}`}
+                    onClick={() => setShowActionMenu(false)}
+                    className="w-full px-3 py-2.5 rounded-xl hover:bg-white/10 transition flex items-center gap-2.5 text-xs font-semibold text-rose-300 hover:text-rose-200 group text-left"
+                  >
+                    <div className="w-6 h-6 rounded-lg bg-rose-500/20 flex items-center justify-center text-rose-400 group-hover:scale-110 transition shrink-0">
+                      <Sparkles className="w-3.5 h-3.5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="font-bold text-white">编写专属文章</div>
+                      <div className="text-[10px] text-neutral-400">使用打字机撰写深度评测</div>
+                    </div>
+                  </Link>
+
+                  <Link
+                    href={`/recommend?url=${encodeURIComponent(app.url)}`}
+                    onClick={() => setShowActionMenu(false)}
+                    className="w-full px-3 py-2 rounded-xl hover:bg-white/10 transition flex items-center gap-2.5 text-xs text-neutral-300 hover:text-white group text-left"
+                  >
+                    <div className="w-6 h-6 rounded-lg bg-white/10 flex items-center justify-center text-neutral-400 shrink-0">
+                      <RotateCcw className="w-3.5 h-3.5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="font-medium text-neutral-200">更新应用信息</div>
+                      <div className="text-[10px] text-neutral-400">重新抓取多端快照与数据</div>
+                    </div>
+                  </Link>
+                </div>
+              )}
+            </div>
             <button
               onClick={handleShare}
               className="px-5 py-2.5 rounded-full bg-white/20 hover:bg-white/30 text-white font-semibold text-sm backdrop-blur-md transition flex items-center justify-center gap-1.5 border border-white/20 shadow-sm cursor-pointer"
