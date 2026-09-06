@@ -134,7 +134,7 @@ export async function POST(request: Request) {
 
       const generatedAppData = await summarizeWithAgent(crawlResult);
       generatedAppData.user_id = userId;
-      generatedAppData.url = targetUrl;
+      generatedAppData.url = generatedAppData.url || targetUrl;
 
       app = await insertApp(generatedAppData);
 

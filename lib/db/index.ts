@@ -585,36 +585,6 @@ export async function searchApps(query: string): Promise<AppItem[]> {
     return [];
   }
 }
-export function isMultiTenantHost(hostname: string): boolean {
-  const lower = (hostname || "").toLowerCase().replace(/^www\./, "");
-  const hosts = ["github.com", "gitlab.com", "gitee.com", "huggingface.co", "notion.site", "vercel.app"];
-  return hosts.some((h) => lower === h || lower.endsWith(`.${h}`));
-}
-
-export function parseGitHubUrl(urlStr: string): { owner?: string; repo?: string } | null {
-  try {
-    const raw = urlStr.startsWith("http://") || urlStr.startsWith("https://") ? urlStr : `https://${urlStr}`;
-    const parsed = new URL(raw);
-    if (!parsed.hostname.toLowerCase().includes("github.com")) return null;
-    const parts = parsed.pathname.replace(/\/+$/, "").split("/").filter(Boolean);
-    const reserved = [
-      "login", "signup", "features", "pricing", "explore", "topics",
-      "trending", "collections", "events", "enterprise", "marketplace",
-      "about", "contact", "settings", "search", "organizations", "orgs",
-      "stars", "notifications", "dashboard"
-    ];
-    if (parts.length >= 2 && !reserved.includes(parts[0].toLowerCase())) {
-      return { owner: parts[0], repo: parts[1] };
-    }
-    if (parts.length === 1 && !reserved.includes(parts[0].toLowerCase())) {
-      return { owner: parts[0] };
-    }
-    return null;
-  } catch {
-    return null;
-  }
-}
-
 export async function findAppForUrl(targetUrl: string): Promise<AppItem | null> {
   if (!targetUrl || typeof targetUrl !== "string") return null;
 
@@ -635,7 +605,6 @@ export async function findAppForUrl(targetUrl: string): Promise<AppItem | null> 
     if (!database) return null;
     await ensureTablesInitialized();
 
-    const hostname = parsed.hostname.toLowerCase();
     const normalizedNoSlash = `${parsed.protocol}//${parsed.host}${parsed.pathname.replace(/\/+$/, "")}`;
     const normalizedWithSlash = `${normalizedNoSlash}/`;
 
@@ -656,60 +625,7 @@ export async function findAppForUrl(targetUrl: string): Promise<AppItem | null> 
       return rowToApp(exactRows[0]);
     }
 
-    // 2. Check if this is a GitHub repository or profile
-    const gh = parseGitHubUrl(urlStr);
-    if (gh && gh.owner && gh.repo) {
-      const repoPath = `github.com/${gh.owner}/${gh.repo}`.toLowerCase();
-      const repoId = `gh-${gh.owner.toLowerCase()}-${gh.repo.toLowerCase()}`;
-
-      const ghRows = await (database as NeonHttpDatabase<typeof schema>)
-        .select()
-        .from(appsTable)
-        .where(
-          or(
-            eq(appsTable.id, repoId),
-            eq(appsTable.id, gh.repo.toLowerCase()),
-            ilike(appsTable.url, `%${repoPath}%`),
-            ilike(appsTable.url, `%${repoPath}/%`)
-          )
-        )
-        .limit(1);
-
-      if (ghRows.length > 0 && ghRows[0]) {
-        return rowToApp(ghRows[0]);
-      }
-      // Crucial: For a specific GitHub repo, do NOT fallback to a generic "github.com" app!
-      return null;
-    }
-
-    if (gh && gh.owner && !gh.repo) {
-      const userPath = `github.com/${gh.owner}`.toLowerCase();
-      const userId = `gh-user-${gh.owner.toLowerCase()}`;
-
-      const ghRows = await (database as NeonHttpDatabase<typeof schema>)
-        .select()
-        .from(appsTable)
-        .where(
-          or(
-            eq(appsTable.id, userId),
-            ilike(appsTable.url, `%${userPath}%`),
-            ilike(appsTable.url, `%${userPath}/%`)
-          )
-        )
-        .limit(1);
-
-      if (ghRows.length > 0 && ghRows[0]) {
-        return rowToApp(ghRows[0]);
-      }
-      return null;
-    }
-
-    // 3. For other multi-tenant platforms (e.g. huggingface.co/spaces/...), don't match root domain
-    if (isMultiTenantHost(hostname) && parsed.pathname.length > 1) {
-      return null;
-    }
-
-    // 4. For regular standalone domains, check domain matching
+    // 2. Fall back to domain-based app matching (all subpaths belong to the domain app)
     return await getAppByDomain(targetUrl);
   } catch (err) {
     console.error("Error in findAppForUrl:", err);
@@ -726,6 +642,46 @@ export async function getAppByDomain(targetUrl: string): Promise<AppItem | null>
     if (!database) return null;
     await ensureTablesInitialized();
 
+    // 1. Direct match by app ID: cleanDomain or hostname (e.g. 'github.com' or 'linear.app')
+    const byIdRows = await (database as NeonHttpDatabase<typeof schema>)
+      .select()
+      .from(appsTable)
+      .where(
+        or(
+          eq(appsTable.id, cleanDomain),
+          eq(appsTable.id, hostname)
+        )
+      )
+      .limit(1);
+
+    if (byIdRows.length > 0 && byIdRows[0]) {
+      return rowToApp(byIdRows[0]);
+    }
+
+    // 2. Exact root domain URL match (e.g. https://github.com, https://github.com/)
+    const rootUrls = [
+      `https://${cleanDomain}`,
+      `https://${cleanDomain}/`,
+      `http://${cleanDomain}`,
+      `http://${cleanDomain}/`,
+      `https://${hostname}`,
+      `https://${hostname}/`,
+      `http://${hostname}`,
+      `http://${hostname}/`,
+      `https://www.${cleanDomain}`,
+      `https://www.${cleanDomain}/`,
+    ];
+    const rootUrlRows = await (database as NeonHttpDatabase<typeof schema>)
+      .select()
+      .from(appsTable)
+      .where(inArray(appsTable.url, rootUrls))
+      .limit(1);
+
+    if (rootUrlRows.length > 0 && rootUrlRows[0]) {
+      return rowToApp(rootUrlRows[0]);
+    }
+
+    // 3. Fallback: match by developer_id or URL pattern, verifying domain match
     const pattern1 = `%${cleanDomain}%`;
     const pattern2 = `%${hostname}%`;
 

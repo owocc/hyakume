@@ -590,20 +590,17 @@ ${crawl.text.slice(0, 1600)}`;
 export async function summarizeWithAgent(crawl: CrawlResult): Promise<AppItem> {
   const env = await getCloudflareEnv();
   const parsedUrl = new URL(crawl.url);
-  const targetKind = detectTargetKind(crawl.url);
-  let fallbackName = cleanTitle(crawl.title, parsedUrl.hostname);
-  if (targetKind.kind === "github_profile" && targetKind.githubUsername) {
-    fallbackName = targetKind.githubUsername;
-  } else if (targetKind.kind === "github_project" && targetKind.githubRepo) {
-    fallbackName = targetKind.githubRepo.repo;
-  }
-  const fallbackCategories = inferCategories(`${crawl.title} ${crawl.description} ${crawl.text}`);
+  const isGithub = parsedUrl.hostname.toLowerCase().includes("github.com");
+  const cleanDomain = parsedUrl.hostname.replace(/^www\./, "").toLowerCase();
+
+  let fallbackName = isGithub ? "GitHub" : cleanTitle(crawl.title, parsedUrl.hostname);
+  const fallbackCategories = isGithub ? ["工具", "WEB", "AI"] : inferCategories(`${crawl.title} ${crawl.description} ${crawl.text}`);
 
   let appName = fallbackName;
-  let developer = targetKind.kind === "github_project"
-    ? (targetKind.githubRepo?.owner || appName)
-    : (targetKind.kind === "github_profile" ? (targetKind.githubUsername || appName) : "官方团队");
-  let tagline = crawl.description ? crawl.description.slice(0, 40) : `${fallbackName}，开启智能便捷的 Web 新体验`;
+  let developer = isGithub ? "github.com Official" : "官方团队";
+  let tagline = isGithub
+    ? "全球最大 AI 驱动的开发者平台，让代码改变世界"
+    : (crawl.description ? crawl.description.slice(0, 40) : `${fallbackName}，开启智能便捷的 Web 新体验`);
   let categories = fallbackCategories;
   let description = "";
   let previewFeatures = ["核心功能", "即时体验", "多端同步"];
@@ -623,7 +620,6 @@ export async function summarizeWithAgent(crawl: CrawlResult): Promise<AppItem> {
 }`;
 
   const userContent = `网址: ${crawl.url}
-目标类型: ${targetKind.kind === "github_profile" ? "GitHub 开发者个人主页" : targetKind.kind === "github_project" ? "GitHub 开源仓库" : "Web 应用/SaaS 工具"}
 标题: ${crawl.title}
 描述: ${crawl.description}
 页面内容节选: ${crawl.text.slice(0, 1000)}`;
@@ -711,23 +707,12 @@ export async function summarizeWithAgent(crawl: CrawlResult): Promise<AppItem> {
     description = `【应用介绍】\n${rawDesc}\n\n【核心特色】\n① 随时随地，即点即用：基于现代浏览器技术构建，免去繁琐安装，畅享无缝体验。\n② 丰富功能，极速响应：轻量化架构设计，全面兼顾数据效率与交互流畅度。\n③ 安全可信，多端适配：完美兼容桌面端与移动端主流现代 Web 浏览器。`;
   }
 
-  let id = parsedUrl.hostname.toLowerCase();
-  let developerName = parsedUrl.hostname.replace(/^www\./, "");
+  const id = isGithub ? "github.com" : cleanDomain;
+  let developerName = isGithub ? "github.com" : cleanDomain;
   if (!developer) {
     developer = `${developerName} Official`;
   }
-  if (targetKind.kind === "github_project" && targetKind.githubRepo) {
-    id = `gh-${targetKind.githubRepo.owner.toLowerCase()}-${targetKind.githubRepo.repo.toLowerCase()}`;
-    developerName = targetKind.githubRepo.owner;
-    developer = targetKind.githubRepo.owner;
-  } else if (targetKind.kind === "github_profile" && targetKind.githubUsername) {
-    id = `gh-user-${targetKind.githubUsername.toLowerCase()}`;
-    developerName = targetKind.githubUsername;
-    developer = targetKind.githubUsername;
-  } else if (parsedUrl.pathname.length > 1) {
-    const cleanPath = parsedUrl.pathname.replace(/^\/+|\/+$/g, "").replace(/[^a-zA-Z0-9_-]+/g, "-").toLowerCase();
-    id = `${parsedUrl.hostname.split(".")[0]}-${cleanPath}`.slice(0, 48);
-  }
+  const appUrl = isGithub ? "https://github.com" : (parsedUrl.pathname.length > 1 ? `${parsedUrl.protocol}//${parsedUrl.host}` : crawl.url);
 
   const primaryCategory = categories[0] || "WEB";
 
@@ -735,12 +720,12 @@ export async function summarizeWithAgent(crawl: CrawlResult): Promise<AppItem> {
     id,
     name: appName,
     tagline,
-    url: crawl.url,
+    url: appUrl,
     category: primaryCategory,
     categories,
     developer,
     developer_id: developerName,
-    icon_url: crawl.iconUrl,
+    icon_url: isGithub ? (crawl.iconUrl || "https://www.google.com/s2/favicons?domain=github.com&sz=128") : crawl.iconUrl,
     cover_url: crawl.coverUrl,
     primary_color: crawl.primaryColor,
     seo_image: crawl.seoImage,
