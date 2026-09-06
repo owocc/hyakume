@@ -117,6 +117,7 @@ export const articlesTable = pgTable(
     github_url: text("github_url"),
     x_url: text("x_url"),
     source_url: text("source_url"),
+    links: text("links"),
     author: text("author").default("AppStore 精选编辑部").notNull(),
     read_time: text("read_time").default("3 分钟阅读").notNull(),
     views: integer("views").default(0).notNull(),

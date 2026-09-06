@@ -4,7 +4,7 @@ import { drizzle as drizzleNeon, type NeonHttpDatabase } from "drizzle-orm/neon-
 import { neon, type NeonQueryFunction } from "@neondatabase/serverless";
 import { eq, or, and, ilike, desc, asc, inArray, type SQL } from "drizzle-orm";
 import pg from "pg";
-import type { AppItem, ReviewItem, CategoryItem, DeviceScreenshots, SubpageItem, ArticleItem, PipelineTaskItem } from "../types";
+import type { AppItem, ReviewItem, CategoryItem, DeviceScreenshots, SubpageItem, ArticleItem, PipelineTaskItem, ArticleLinkItem } from "../types";
 import * as schema from "./schema";
 import { appsTable, reviewsTable, categoriesTable, subpagesTable, articlesTable, tasksTable } from "./schema";
 
@@ -319,6 +319,7 @@ export async function ensureTablesInitialized(): Promise<void> {
             await neonSqlInstance.query(`
               ALTER TABLE apps ADD COLUMN IF NOT EXISTS user_id TEXT DEFAULT 'system';
               ALTER TABLE articles ADD COLUMN IF NOT EXISTS user_id TEXT DEFAULT 'system';
+              ALTER TABLE articles ADD COLUMN IF NOT EXISTS links TEXT;
               ALTER TABLE app_subpages ADD COLUMN IF NOT EXISTS user_id TEXT DEFAULT 'system';
               CREATE INDEX IF NOT EXISTS idx_apps_user_id ON apps(user_id);
               CREATE INDEX IF NOT EXISTS idx_articles_user_id ON articles(user_id);
@@ -360,6 +361,7 @@ export async function ensureTablesInitialized(): Promise<void> {
             await client.query(`
               ALTER TABLE apps ADD COLUMN IF NOT EXISTS user_id TEXT DEFAULT 'system';
               ALTER TABLE articles ADD COLUMN IF NOT EXISTS user_id TEXT DEFAULT 'system';
+              ALTER TABLE articles ADD COLUMN IF NOT EXISTS links TEXT;
               ALTER TABLE app_subpages ADD COLUMN IF NOT EXISTS user_id TEXT DEFAULT 'system';
               CREATE INDEX IF NOT EXISTS idx_apps_user_id ON apps(user_id);
               CREATE INDEX IF NOT EXISTS idx_articles_user_id ON articles(user_id);
@@ -972,6 +974,7 @@ export async function getArticlesByAppId(appId: string): Promise<ArticleItem[]> 
       github_url: r.github_url || undefined,
       x_url: r.x_url || undefined,
       source_url: r.source_url || undefined,
+      links: parseJsonArray<ArticleLinkItem>(r.links, []),
       author: r.author,
       read_time: r.read_time,
       views: Number(r.views || 0),
@@ -1010,8 +1013,8 @@ export async function getArticleById(id: string): Promise<ArticleItem | null> {
       content: r.content,
       cover_image: r.cover_image || "",
       github_url: r.github_url || undefined,
-      x_url: r.x_url || undefined,
       source_url: r.source_url || undefined,
+      links: parseJsonArray<ArticleLinkItem>(r.links, []),
       author: r.author,
       read_time: r.read_time,
       views: Number(r.views || 0),
@@ -1069,6 +1072,7 @@ export async function getAllArticles(options?: { limit?: number; userId?: string
       github_url: r.github_url || undefined,
       x_url: r.x_url || undefined,
       source_url: r.source_url || undefined,
+      links: parseJsonArray<ArticleLinkItem>(r.links, []),
       author: r.author,
       read_time: r.read_time,
       views: Number(r.views || 0),
@@ -1097,8 +1101,8 @@ export async function insertArticle(article: ArticleItem): Promise<ArticleItem> 
     github_url: article.github_url || null,
     x_url: article.x_url || null,
     source_url: article.source_url || null,
+    links: JSON.stringify(article.links || []),
     author: article.author || "AppStore 精选编辑部",
-    read_time: article.read_time || "3 分钟阅读",
     views: article.views || 0,
     likes: article.likes || 0,
     user_id: article.user_id || "system",
@@ -1126,9 +1130,8 @@ export async function insertArticle(article: ArticleItem): Promise<ArticleItem> 
           github_url: values.github_url,
           x_url: values.x_url,
           source_url: values.source_url,
+          links: values.links,
           author: values.author,
-          read_time: values.read_time,
-          views: values.views,
           likes: values.likes,
           ...(article.user_id ? { user_id: article.user_id } : {}),
           updated_at: values.updated_at,

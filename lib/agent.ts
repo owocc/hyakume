@@ -1,4 +1,4 @@
-import type { AppItem, ArticleItem } from "./types";
+import type { AppItem, ArticleItem, ArticleLinkItem } from "./types";
 import type { CrawlResult } from "./crawler";
 import { getCloudflareEnv } from "./cf-env";
 export const ALLOWED_CATEGORIES: Record<string, true> = {
@@ -249,6 +249,7 @@ export interface SubpageAnalysisResult {
   content: string;
   github_url?: string;
   x_url?: string;
+  links?: ArticleLinkItem[];
   author: string;
 }
 
@@ -336,6 +337,15 @@ ${appName} 作为一款现代化的 Web 应用，以其极简的设计理念与�
 - **适用人群**：追求极致效率的开发者、设计师、数字游民以及所有热爱探索优质 Web 工具的现代工作者。
 
 ${appName} 成功展示了现代 Web 应用在轻量化与专业性之间的完美平衡，非常值得纳入您的日常工具箱！`;
+  const fallbackLinks: ArticleLinkItem[] = [
+    { label: "官方网站", url: crawl.url, type: "website" },
+  ];
+  if (githubUrl) {
+    fallbackLinks.push({ label: "GitHub 仓库", url: githubUrl, type: "github" });
+  }
+  if (xUrl) {
+    fallbackLinks.push({ label: "X (Twitter) 动态", url: xUrl, type: "x" });
+  }
 
   return {
     is_meaningful: true,
@@ -346,6 +356,7 @@ ${appName} 成功展示了现代 Web 应用在轻量化与专业性之间的完�
     content,
     github_url: githubUrl,
     x_url: xUrl,
+    links: fallbackLinks,
     author: "AppStore 精选编辑部",
   };
 }
@@ -382,6 +393,13 @@ JSON 字段定义如下：
   "tag": "开源解读",
   "title": "深度推荐文章标题（例如：开源极客画像：${username} 与 TA 的硬核开发世界）",
   "summary": "80~150字核心导读摘要，概述该开发者的核心技术方向与代表作",
+  "links": [
+    {
+      "label": "链接用途标签（如：GitHub 主页、技术博客、Twitter 动态等）",
+      "url": "https://github.com/${username}",
+      "type": "github"
+    }
+  ],
   "github_url": "https://github.com/${username}",
   "x_url": "如果开发者主页提供了其 X/Twitter 链接则填写，否则输出空字符串 \"\"",
   "content": "完整的 Markdown 格式深度推荐文章，结构需包含：# 👨‍💻 开发者全景画像、## 🌟 核心开源贡献与代表项目、## 🛠️ 主力技术栈与工程哲学、## 💡 为什么值得关注 / Follow 指南、## 🎯 总结与个人主页速览",
@@ -412,6 +430,13 @@ JSON 字段定义如下：
   "tag": "开源解读",
   "title": "深度推荐文章标题（例如：极速探秘 ${targetKind.githubRepo?.repo || repoName}：现代化架构与核心实现）",
   "summary": "80~150字核心导读摘要，高度凝练项目价值与技术特色",
+  "links": [
+    {
+      "label": "链接用途标签（如：GitHub 仓库、官方文档、在线 Demo、发布日志等）",
+      "url": "https://github.com/${repoName}",
+      "type": "github"
+    }
+  ],
   "github_url": "https://github.com/${repoName}",
   "x_url": "如果 README 中明确提供了官方 Twitter/X 链接则填写，否则输出空字符串 \"\"",
   "content": "完整的 Markdown 格式深度推荐文章，结构需包含：# 🌟 项目核心亮点与解决痛点、## 🛠️ 架构设计与关键特性解析、## 🚀 快速上手与集成指南、## 💻 GitHub 生态与 Star 价值、## 🎯 综合研判与适用场景",
@@ -442,7 +467,14 @@ JSON 字段定义如下：
   "tag": "推荐类型（只能从 [\"精选推荐\", \"深度评测\", \"功能解析\"] 中选一个）",
   "title": "深度推荐文章标题（生动、有力，针对该产品特色命名）",
   "summary": "80~150字核心导读摘要",
-  "github_url": "仅当该项目本身是开源项目且有官方代码仓库时填写完整 GitHub 链接，否则必须输出空字符串 \"\"",
+  "links": [
+    {
+      "label": "链接用途（如：官方主页、官方文档、开发者社区、在线演示等，根据页面实际发现的链接自主提炼）",
+      "url": "真实有效 URL",
+      "type": "类型，从 [\"website\", \"docs\", \"github\", \"discord\", \"x\", \"demo\", \"community\", \"other\"] 中选择"
+    }
+  ],
+  "github_url": "仅当页面明确提供该产品自身的官方代码仓库时填写，否则必须输出空字符串 \"\"",
   "x_url": "如果页面明确提供了该产品的官方 X 账号主页则填写，否则必须输出空字符串 \"\"",
   "content": "完整的 Markdown 格式深度推荐文章，根据产品特性自由灵活布局章节（建议包含：# 🌟 核心亮点与产品全貌、## 🛠️ 核心架构与功能解析、## 💡 深度上手与实用技巧指南、## 🎯 综合研判与适用人群，非开源项目切勿包含 GitHub 开源章节）",
   "author": "AppStore 精选编辑部"
@@ -506,6 +538,30 @@ ${crawl.text.slice(0, 1600)}`;
       const jsonMatch = rawText.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
+        const rawLinks = Array.isArray(parsed.links) ? parsed.links : [];
+        const validLinks: ArticleLinkItem[] = [];
+        for (const l of rawLinks) {
+          if (l && typeof l.url === "string" && l.url.startsWith("http")) {
+            validLinks.push({
+              label: typeof l.label === "string" && l.label.trim() ? l.label.trim() : "相关链接",
+              url: l.url.trim(),
+              type: typeof l.type === "string" ? l.type.trim().toLowerCase() : "other",
+              icon: typeof l.icon === "string" ? l.icon.trim() : undefined,
+            });
+          }
+        }
+
+        const ghFromLinks = validLinks.find((l) => l.type === "github" || (l.url && isValidGithubRepoUrl(l.url)))?.url;
+        const xFromLinks = validLinks.find((l) => l.type === "x" || (l.url && isValidXUrl(l.url)))?.url;
+
+        const github_url = isValidGithubRepoUrl(parsed.github_url)
+          ? parsed.github_url.trim()
+          : (isValidGithubRepoUrl(ghFromLinks) ? ghFromLinks : (parsedUrl.hostname.includes("github.com") && isValidGithubRepoUrl(crawl.url) ? crawl.url : undefined));
+
+        const x_url = isValidXUrl(parsed.x_url)
+          ? parsed.x_url.trim()
+          : (isValidXUrl(xFromLinks) ? xFromLinks : ((parsedUrl.hostname.includes("x.com") || parsedUrl.hostname.includes("twitter.com")) && isValidXUrl(crawl.url) ? crawl.url : undefined));
+
         return {
           is_meaningful: typeof parsed.is_meaningful === "boolean" ? parsed.is_meaningful : true,
           label: typeof parsed.label === "string" && parsed.label.trim() ? parsed.label.trim() : fallback.label,
@@ -513,13 +569,13 @@ ${crawl.text.slice(0, 1600)}`;
           title: typeof parsed.title === "string" && parsed.title.trim() ? parsed.title.trim() : fallback.title,
           summary: typeof parsed.summary === "string" && parsed.summary.trim() ? parsed.summary.trim() : fallback.summary,
           content: typeof parsed.content === "string" && parsed.content.length > 50 ? parsed.content.trim() : fallback.content,
-          github_url: isValidGithubRepoUrl(parsed.github_url) ? parsed.github_url.trim() : (parsedUrl.hostname.includes("github.com") && isValidGithubRepoUrl(crawl.url) ? crawl.url : undefined),
-          x_url: isValidXUrl(parsed.x_url) ? parsed.x_url.trim() : ((parsedUrl.hostname.includes("x.com") || parsedUrl.hostname.includes("twitter.com")) && isValidXUrl(crawl.url) ? crawl.url : undefined),
+          github_url,
+          x_url,
+          links: validLinks.length > 0 ? validLinks : fallback.links,
           author: parsed.author || fallback.author,
         };
       }
     } catch (parseErr) {
-      console.warn("Failed to parse AI article JSON, using fallback:", parseErr);
     }
   }
 
@@ -721,6 +777,7 @@ export async function summarizeWithAgent(crawl: CrawlResult): Promise<AppItem> {
       cover_image: crawl.coverUrl,
       github_url: articleAnalysis.github_url,
       x_url: articleAnalysis.x_url,
+      links: articleAnalysis.links,
       source_url: crawl.url,
       author: articleAnalysis.author,
       read_time: "3 分钟阅读",

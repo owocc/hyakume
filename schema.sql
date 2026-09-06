@@ -63,6 +63,32 @@ CREATE INDEX IF NOT EXISTS idx_apps_trending ON apps(trending);
 CREATE INDEX IF NOT EXISTS idx_apps_user_id ON apps(user_id);
 CREATE INDEX IF NOT EXISTS idx_reviews_app_id ON reviews(app_id);
 
+CREATE TABLE IF NOT EXISTS articles (
+  id TEXT PRIMARY KEY,
+  app_id TEXT NOT NULL REFERENCES apps(id) ON DELETE CASCADE,
+  slug TEXT,
+  title TEXT NOT NULL,
+  summary TEXT DEFAULT '',
+  tag TEXT DEFAULT '精选推荐' NOT NULL,
+  content TEXT NOT NULL,
+  cover_image TEXT DEFAULT '',
+  github_url TEXT,
+  x_url TEXT,
+  source_url TEXT,
+  links TEXT,
+  author TEXT DEFAULT 'AppStore 精选编辑部' NOT NULL,
+  read_time TEXT DEFAULT '3 分钟阅读' NOT NULL,
+  views INTEGER DEFAULT 0 NOT NULL,
+  likes INTEGER DEFAULT 0 NOT NULL,
+  user_id TEXT DEFAULT 'system' NOT NULL,
+  created_at BIGINT NOT NULL,
+  updated_at BIGINT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_articles_app_id ON articles(app_id);
+CREATE INDEX IF NOT EXISTS idx_articles_created_at ON articles(created_at);
+CREATE INDEX IF NOT EXISTS idx_articles_user_id ON articles(user_id);
+
 CREATE TABLE IF NOT EXISTS tasks (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL,

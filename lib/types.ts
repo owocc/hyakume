@@ -93,6 +93,13 @@ export interface SubpageItem {
   created_at: number;
 };
 
+export interface ArticleLinkItem {
+  label: string;
+  url: string;
+  type?: "github" | "x" | "docs" | "discord" | "community" | "website" | "demo" | "other" | string;
+  icon?: string;
+}
+
 export interface ArticleItem {
   id: string;
   app_id: string;
@@ -105,6 +112,7 @@ export interface ArticleItem {
   github_url?: string;
   x_url?: string;
   source_url?: string;
+  links?: ArticleLinkItem[];
   author: string;
   read_time: string;
   views: number;

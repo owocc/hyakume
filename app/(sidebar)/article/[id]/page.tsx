@@ -12,9 +12,11 @@ import {
   Share2,
   Layers,
   ChevronRight,
+  BookOpen,
+  Globe,
+  MessageSquare,
 } from "lucide-react";
 import type { Metadata } from "next";
-
 export const dynamic = "force-dynamic";
 
 interface Props {
@@ -103,21 +105,64 @@ export default async function ArticleDetailPage({ params }: Props) {
               <span>{article.tag || "精选推荐"}</span>
             </span>
 
-            {article.github_url && /^https?:\/\/(?:www\.)?github\.com\/[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+/.test(article.github_url) && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-neutral-900 text-white text-[11px] font-medium">
-                <Code2 className="w-3 h-3" />
-                <span>包含 GitHub 仓库</span>
-              </span>
-            )}
+            {article.links && article.links.length > 0 ? (
+              article.links.map((link, idx) => {
+                const isGh = link.type === "github" || link.url.includes("github.com");
+                const isX = link.type === "x" || link.url.includes("x.com") || link.url.includes("twitter.com");
+                const isDocs = link.type === "docs" || link.label.includes("文档");
+                const isDiscord = link.type === "discord" || link.url.includes("discord");
 
-            {article.x_url && /^https?:\/\/(?:www\.)?(?:twitter\.com|x\.com)\/[a-zA-Z0-9_]+/.test(article.x_url) && !article.x_url.replace(/\/+$/, "").endsWith("/x.com") && !article.x_url.replace(/\/+$/, "").endsWith("/twitter.com") && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-sky-500/15 text-sky-600 dark:text-sky-400 text-[11px] font-medium border border-sky-500/25">
-                <Share2 className="w-3 h-3" />
-                <span>包含 X 社区动态</span>
-              </span>
+                return (
+                  <a
+                    key={idx}
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium transition shadow-2xs ${
+                      isGh
+                        ? "bg-neutral-900 text-white hover:bg-neutral-800"
+                        : isX
+                        ? "bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/25 hover:bg-sky-500/25"
+                        : isDocs
+                        ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 hover:bg-emerald-500/25"
+                        : isDiscord
+                        ? "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/25 hover:bg-indigo-500/25"
+                        : "bg-secondary text-foreground hover:bg-secondary-hover border border-border"
+                    }`}
+                  >
+                    {isGh ? (
+                      <Code2 className="w-3 h-3" />
+                    ) : isX ? (
+                      <Share2 className="w-3 h-3" />
+                    ) : isDocs ? (
+                      <BookOpen className="w-3 h-3" />
+                    ) : isDiscord ? (
+                      <MessageSquare className="w-3 h-3" />
+                    ) : (
+                      <ExternalLink className="w-3 h-3" />
+                    )}
+                    <span>{link.label}</span>
+                  </a>
+                );
+              })
+            ) : (
+              <>
+                {article.github_url && /^https?:\/\/(?:www\.)?github\.com\/[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+/.test(article.github_url) && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-neutral-900 text-white text-[11px] font-medium">
+                    <Code2 className="w-3 h-3" />
+                    <span>包含 GitHub 仓库</span>
+                  </span>
+                )}
+
+                {article.x_url && /^https?:\/\/(?:www\.)?(?:twitter\.com|x\.com)\/[a-zA-Z0-9_]+/.test(article.x_url) && !article.x_url.replace(/\/+$/, "").endsWith("/x.com") && !article.x_url.replace(/\/+$/, "").endsWith("/twitter.com") && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-sky-500/15 text-sky-600 dark:text-sky-400 text-[11px] font-medium border border-sky-500/25">
+                    <Share2 className="w-3 h-3" />
+                    <span>包含 X 社区动态</span>
+                  </span>
+                )}
+              </>
             )}
           </div>
-
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-foreground tracking-tight leading-[1.2]">
             {article.title}
           </h1>
@@ -186,6 +231,50 @@ export default async function ArticleDetailPage({ params }: Props) {
               >
                 <span>在商店查看</span>
               </Link>
+            </div>
+          </div>
+        )}
+        {/* AI-collected Official Resources & Links Card */}
+        {article.links && article.links.length > 0 && (
+          <div className="p-5 rounded-2xl sm:rounded-3xl bg-card border border-border shadow-xs space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-primary" />
+                <span>关联资源与官方链接</span>
+              </span>
+              <span className="text-[11px] text-muted-foreground">AI 智能提取已校验</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {article.links.map((link, i) => (
+                <a
+                  key={i}
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-3 rounded-2xl bg-secondary/60 hover:bg-secondary border border-border transition flex items-center justify-between group"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-8 h-8 rounded-xl bg-background border border-border flex items-center justify-center shrink-0">
+                      {link.type === "github" || link.url.includes("github.com") ? (
+                        <Code2 className="w-4 h-4" />
+                      ) : link.type === "x" || link.url.includes("x.com") || link.url.includes("twitter.com") ? (
+                        <Share2 className="w-4 h-4 text-sky-500" />
+                      ) : link.type === "docs" || link.label.includes("文档") ? (
+                        <BookOpen className="w-4 h-4 text-emerald-500" />
+                      ) : link.type === "discord" || link.url.includes("discord") ? (
+                        <MessageSquare className="w-4 h-4 text-indigo-500" />
+                      ) : (
+                        <Globe className="w-4 h-4 text-muted-foreground" />
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold text-foreground truncate">{link.label}</div>
+                      <div className="text-[10px] text-muted-foreground truncate max-w-xs">{link.url}</div>
+                    </div>
+                  </div>
+                  <ExternalLink className="w-3.5 h-3.5 text-muted-foreground group-hover:text-foreground shrink-0 ml-2" />
+                </a>
+              ))}
             </div>
           </div>
         )}
