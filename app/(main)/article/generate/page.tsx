@@ -16,7 +16,7 @@ import {
   CheckCircle2,
   Loader2,
 } from "lucide-react";
-import type { ArticleItem, AppItem } from "@/lib/types";
+import type { ArticleItem, AppItem, PipelineTaskItem } from "@/lib/types";
 
 // Soft realistic typewriter mechanical click sound generator using Web Audio API
 function playTypewriterClick(audioCtx: AudioContext | null, isMuted: boolean) {
@@ -85,6 +85,7 @@ function TypewriterGeneratorContent() {
 
   const queryAppId = searchParams.get("appId") || "";
   const queryUrl = searchParams.get("url") || "";
+  const queryTaskId = searchParams.get("taskId") || "";
 
   const [targetInput, setTargetInput] = useState(queryAppId || queryUrl || "");
   const [selectedTag, setSelectedTag] = useState<string>("精选推荐");
@@ -133,7 +134,59 @@ function TypewriterGeneratorContent() {
     }
   }, [queryAppId]);
 
-  // Auto-scroll the paper as lines are typed
+  // Support tracking taskId on typewriter page
+  useEffect(() => {
+    if (!queryTaskId) return;
+
+    let isSubscribed = true;
+
+    async function syncTask() {
+      try {
+        const res = await fetch(`/api/user/tasks?taskId=${encodeURIComponent(queryTaskId)}`);
+        if (!res.ok) return;
+        const json = (await res.json()) as { success?: boolean; task?: PipelineTaskItem };
+        if (!json.success || !json.task || !isSubscribed) return;
+
+        const t = json.task;
+        if (t.url) setTargetInput(t.url);
+        if (t.progress) setProgress(t.progress);
+
+        setTypedLogs((prev) => {
+          const logMsg = `>> [TASK_SYNC] ${t.step_name} (${t.progress}%)`;
+          return prev.includes(logMsg) ? prev : [...prev, logMsg];
+        });
+
+        if (t.status === "processing") {
+          setIsGenerating(true);
+          playTypewriterClick(audioCtxRef.current, isMuted);
+        } else if (t.status === "completed") {
+          setIsGenerating(false);
+          setProgress(100);
+          playTypewriterBell(audioCtxRef.current, isMuted);
+          if (t.article_id) {
+            const artRes = await fetch(`/api/articles/${t.article_id}`);
+            if (artRes.ok) {
+              const artJson = (await artRes.json()) as { success?: boolean; article?: ArticleItem };
+              if (artJson.article && isSubscribed) {
+                setCreatedArticle(artJson.article);
+              }
+            }
+          }
+        } else if (t.status === "failed") {
+          setIsGenerating(false);
+          setErrorMsg(t.error || "打字机印制中断");
+        }
+      } catch {}
+    }
+
+    syncTask();
+
+    const timer = setInterval(syncTask, 2000);
+    return () => {
+      isSubscribed = false;
+      clearInterval(timer);
+    };
+  }, [queryTaskId, isMuted]);
   useEffect(() => {
     if (paperScrollRef.current) {
       paperScrollRef.current.scrollTop = paperScrollRef.current.scrollHeight;
@@ -160,23 +213,29 @@ function TypewriterGeneratorContent() {
       return;
     }
 
+    const taskId =
+      queryTaskId ||
+      "art_task_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+
+    if (!queryTaskId) {
+      const newUrl = `/article/generate?taskId=${taskId}&url=${encodeURIComponent(clean)}`;
+      window.history.replaceState(null, "", newUrl);
+    }
+
     setIsGenerating(true);
     setProgress(5);
     setTypedLogs([]);
     setCreatedArticle(null);
     setErrorMsg("");
 
-    // Simulate typing paper feed line
-    triggerKeyStroke();
-    setTypedLogs([`>> [CARRIAGE_FEED] Rolling vintage manuscript paper into platen...`]);
     const delay = (ms: number): Promise<void> => {
       const { promise, resolve } = Promise.withResolvers<void>();
       setTimeout(resolve, ms);
       return promise;
     };
+
     try {
       await delay(600);
-      triggerKeyStroke();
       setProgress(20);
       setTypedLogs((prev) => [
         ...prev,
@@ -192,7 +251,6 @@ function TypewriterGeneratorContent() {
         `>> [ANALYZING_ARCHITECTURE] Parsing feature set & key attributes...`,
         `>> [INDEPENDENT_STORYTELLING] Inking tailored narrative sections...`,
       ]);
-
       // Call dedicated Article Generation API
       const res = await fetch("/api/articles/generate", {
         method: "POST",
@@ -201,6 +259,7 @@ function TypewriterGeneratorContent() {
           appId: loadedApp?.id || (clean.startsWith("http") ? undefined : clean),
           url: clean.startsWith("http") ? clean : loadedApp?.url,
           tag: selectedTag,
+          taskId,
         }),
       });
 

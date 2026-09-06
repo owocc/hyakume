@@ -1,5 +1,5 @@
 import { auth } from "@/lib/auth";
-import { getUserTasks, createTask } from "@/lib/db";
+import { getUserTasks, createTask, getTaskById } from "@/lib/db";
 import type { PipelineTaskItem } from "@/lib/types";
 export async function GET(request: Request) {
   try {
@@ -10,11 +10,19 @@ export async function GET(request: Request) {
         { status: 401 }
       );
     }
+    const { searchParams } = new URL(request.url);
+    const taskIdParam = searchParams.get("taskId");
+    if (taskIdParam) {
+      const singleTask = await getTaskById(taskIdParam);
+      if (!singleTask || singleTask.user_id !== session.user.id) {
+        return Response.json({ success: false, error: "任务不存在或无权访问" }, { status: 404 });
+      }
+      return Response.json({ success: true, task: singleTask });
+    }
 
     const tasks = await getUserTasks(session.user.id);
     const activeTasks = tasks.filter((t) => t.status === "processing");
     const completedTasks = tasks.filter((t) => t.status !== "processing");
-
     return Response.json({
       success: true,
       tasks,

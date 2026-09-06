@@ -183,8 +183,14 @@ function RecommendDetailContent() {
 
   const id = (params?.id as string) || "rec_task";
   const targetUrl = searchParams.get("url") || "https://linear.app";
-  const writeArticle = searchParams.get("writeArticle") !== "false";
+  const isArticleTask = Boolean(id && (id.startsWith("art_") || id.startsWith("article_")));
 
+  // Redirect article tasks exclusively to typewriter page
+  useEffect(() => {
+    if (isArticleTask) {
+      router.replace(`/article/generate?taskId=${id}&url=${encodeURIComponent(targetUrl)}`);
+    }
+  }, [isArticleTask, id, targetUrl, router]);
   // Pipeline state
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [userSelectedStep, setUserSelectedStep] = useState<number | null>(null);
@@ -199,11 +205,12 @@ function RecommendDetailContent() {
   const activeStep = userSelectedStep ?? currentStep;
 
   // Trigger backend analysis
+  // Trigger backend analysis (only for app recommendations)
   useEffect(() => {
+    if (isArticleTask) return;
     let isCancelled = false;
 
     async function runPipeline() {
-      // Progressive visual step simulation while real API executes
       const t1 = setTimeout(() => !isCancelled && setCurrentStep(2), 1200);
       const t2 = setTimeout(() => !isCancelled && setCurrentStep(3), 2600);
       const t3 = setTimeout(() => !isCancelled && setCurrentStep(4), 4200);
@@ -213,8 +220,9 @@ function RecommendDetailContent() {
         const res = await fetch("/api/analyze", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url: targetUrl, taskId: id, writeArticle }),
+          body: JSON.stringify({ url: targetUrl, taskId: id }),
         });
+
         if (res.status === 401) {
           setErrorMsg("发布需要注册并登录账号，正在为您跳转到登录页面...");
           setIsCompleted(true);
@@ -308,6 +316,16 @@ function RecommendDetailContent() {
     setUserSelectedStep(null);
   };
 
+  if (isArticleTask) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+        <div className="flex flex-col items-center gap-3 text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-rose-500" />
+          <p className="text-sm font-mono text-muted-foreground">正在前往打字机文章生成台...</p>
+        </div>
+      </div>
+    );
+  }
   const activeConfig =
     STEP_CONFIGS.find((s) => s.id === activeStep) || STEP_CONFIGS[0];
   const logs = activeConfig.generateLogs(targetUrl, createdApp);

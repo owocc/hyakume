@@ -702,6 +702,10 @@ function DashboardContent() {
                       const isProcessing = task.status === "processing";
                       const isFailed = task.status === "failed";
                       const isCompleted = task.status === "completed";
+                      const isArticleTask =
+                        task.id.startsWith("art_") ||
+                        task.step_name.includes("打字机") ||
+                        task.step_name.includes("文章");
 
                       return (
                         <div
@@ -764,35 +768,51 @@ function DashboardContent() {
                             {/* Actions */}
                             <div className="flex items-center gap-2 shrink-0">
                               {isProcessing ? (
-                                <Link
-                                  href={`/recommend/${task.id}?url=${encodeURIComponent(task.url)}`}
-                                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-rose-500 hover:bg-rose-600 text-white text-xs font-semibold shadow-xs transition active:scale-95"
-                                >
-                                  <span>查看实时流水线</span>
-                                  <ArrowRight className="w-3 h-3" />
-                                </Link>
+                                isArticleTask ? (
+                                  <Link
+                                    href={`/article/generate?taskId=${task.id}&url=${encodeURIComponent(task.url)}`}
+                                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-rose-500 hover:bg-rose-600 text-white text-xs font-semibold shadow-xs transition active:scale-95"
+                                  >
+                                    <Sparkles className="w-3 h-3" />
+                                    <span>查看打字机印制进度</span>
+                                    <ArrowRight className="w-3 h-3" />
+                                  </Link>
+                                ) : (
+                                  <Link
+                                    href={`/recommend/${task.id}?url=${encodeURIComponent(task.url)}`}
+                                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 hover:bg-neutral-800 text-xs font-semibold shadow-xs transition active:scale-95"
+                                  >
+                                    <span>查看收录流水线</span>
+                                    <ArrowRight className="w-3 h-3" />
+                                  </Link>
+                                )
                               ) : isCompleted ? (
                                 <div className="flex items-center gap-2">
-                                  {task.article_id && (
+                                  {task.article_id ? (
                                     <Link
                                       href={`/article/${task.article_id}`}
-                                      className="px-3 py-1.5 rounded-full border border-rose-200 dark:border-rose-900/60 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-semibold transition shadow-2xs"
+                                      className="px-3.5 py-1.5 rounded-full bg-rose-500 hover:bg-rose-600 text-white text-xs font-semibold transition shadow-xs flex items-center gap-1"
                                     >
-                                      阅读文章
+                                      <BookOpen className="w-3 h-3" />
+                                      <span>阅读文章</span>
                                     </Link>
-                                  )}
-                                  {task.app_id && (
+                                  ) : null}
+                                  {task.app_id ? (
                                     <Link
                                       href={`/app/${task.app_id}`}
                                       className="px-3 py-1.5 rounded-full bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-foreground text-xs font-semibold transition"
                                     >
                                       查看应用
                                     </Link>
-                                  )}
+                                  ) : null}
                                 </div>
                               ) : (
                                 <Link
-                                  href={`/recommend?url=${encodeURIComponent(task.url)}`}
+                                  href={
+                                    isArticleTask
+                                      ? `/article/generate?url=${encodeURIComponent(task.url)}`
+                                      : `/recommend?url=${encodeURIComponent(task.url)}`
+                                  }
                                   className="px-3.5 py-1.5 rounded-full border border-neutral-200 dark:border-neutral-700 text-xs font-medium hover:bg-neutral-100 dark:hover:bg-neutral-800 transition"
                                 >
                                   重试
@@ -800,7 +820,6 @@ function DashboardContent() {
                               )}
                             </div>
                           </div>
-
                           {/* Animated Progress Bar */}
                           <div className="mt-3 w-full bg-neutral-100 dark:bg-neutral-800 rounded-full h-1.5 overflow-hidden">
                             <div
