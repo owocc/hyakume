@@ -76,12 +76,12 @@ export default async function LandingPage() {
       */}
       <div className="h-[100dvh] max-h-[100dvh] w-full flex flex-col justify-between overflow-hidden relative flex-none">
         {/* Top Section: Centered Logo & Branding */}
-        <header className="pt-[18vh] sm:pt-[14vh] md:pt-14 px-4 sm:px-6 flex justify-center items-center z-10 flex-none">
+        <header className="pt-[18vh] sm:pt-[14vh] md:pt-16 lg:pt-20 px-4 sm:px-6 flex justify-center items-center z-10 flex-none">
           <Logo variant="hero" href="/" />
         </header>
 
         {/* Hero Section: Centered Headline, Subtitle, Dual CTAs */}
-        <section className="px-4 sm:px-6 py-2 text-center max-w-3xl mx-auto z-10 flex flex-col items-center flex-none">
+        <section className="px-4 sm:px-6 pt-2 pb-2 md:pt-6 lg:pt-10 xl:pt-12 text-center max-w-3xl mx-auto z-10 flex flex-col items-center flex-none">
           <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-[52px] font-extrabold tracking-tight text-foreground leading-[1.15] sm:leading-[1.12]">
             {t("heading1")}
             <br />

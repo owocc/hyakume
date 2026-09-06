@@ -26,51 +26,48 @@ export interface LogoProps {
 }
 
 /**
- * Pixel Mosaic Mark: 3x3 digital grid iconic mark
+ * Brand App Icon Mark: Signature rounded app badge using the custom logo
  */
-export function PixelMark({ size = "md", className = "" }: { size?: "sm" | "md" | "lg"; className?: string }) {
+export function AppIconMark({
+  size = "md",
+  className = "",
+}: {
+  size?: "sm" | "md" | "lg" | "hero";
+  className?: string;
+}) {
   const sizeClasses = {
-    sm: "w-6 h-6 gap-[1.5px] p-[1.5px]",
-    md: "w-7 h-7 sm:w-8 sm:h-8 gap-[2px] p-[2px]",
-    lg: "w-9 h-9 sm:w-10 sm:h-10 gap-[2.5px] p-[2.5px]",
-  }[size];
+    sm: "w-7 h-7 sm:w-8 sm:h-8 rounded-lg",
+    md: "w-8 h-8 sm:w-9 sm:h-9 rounded-xl",
+    lg: "w-10 h-10 sm:w-11 sm:h-11 rounded-xl",
+    hero: "w-12 h-12 sm:w-14 sm:h-14 rounded-2xl shadow-md",
+  }[size] || "w-8 h-8 sm:w-9 sm:h-9 rounded-xl";
 
   return (
-    <div className={`grid grid-cols-3 ${sizeClasses} select-none ${className}`}>
-      {/* Row 1 */}
-      <div className="w-full h-full bg-neutral-400/90 rounded-[1px]" />
-      <div className="w-full h-full bg-neutral-900 rounded-[1px]" />
-      <div className="w-full h-full bg-neutral-200/80 rounded-[1px]" />
-      {/* Row 2 */}
-      <div className="w-full h-full bg-neutral-800 rounded-[1px]" />
-      <div className="w-full h-full bg-neutral-500 rounded-[1px]" />
-      <div className="w-full h-full bg-neutral-300 rounded-[1px]" />
-      {/* Row 3 */}
-      <div className="w-full h-full bg-neutral-300 rounded-[1px]" />
-      <div className="w-full h-full bg-neutral-700 rounded-[1px]" />
-      <div className="w-full h-full bg-neutral-100 rounded-[1px]" />
+    <div
+      className={`relative flex items-center justify-center shrink-0 select-none overflow-hidden bg-black border border-white/15 shadow-sm transition-transform duration-200 group-hover:scale-105 ${sizeClasses} ${className}`}
+    >
+      <img
+        src="/logo.jpeg"
+        alt="Hyakume Logo"
+        width={128}
+        height={128}
+        className="w-full h-full object-cover select-none pointer-events-none"
+        loading="eager"
+      />
     </div>
   );
 }
 
 /**
- * Brand App Icon Mark: Signature rounded app badge with Iris/Mosaic eye theme
+ * Backward compatible alias for PixelMark
  */
-export function AppIconMark({ size = "md", className = "" }: { size?: "sm" | "md" | "lg"; className?: string }) {
-  return (
-    <div
-      className={`flex items-center justify-center select-none transition-transform group-hover:scale-105 ${className}`}
-    >
-      <PixelMark size={size} />
-    </div>
-  );
-}
+export const PixelMark = AppIconMark;
 
 export function Logo({
   variant = "header",
   size = "md",
   text = SITE_CONFIG.name,
-  subtitle = SITE_CONFIG.poweredBy,
+  subtitle = "",
   href,
   className = "",
 }: LogoProps) {
@@ -78,10 +75,12 @@ export function Logo({
   if (variant === "hero") {
     const content = (
       <div className={`flex flex-col items-center gap-2 select-none ${className}`}>
-        <PixelMark size={size} />
-        <span className="text-[11px] font-medium text-neutral-400 tracking-wide">
-          {subtitle}
-        </span>
+        <AppIconMark size="hero" />
+        {subtitle ? (
+          <span className="text-[11px] font-medium text-neutral-400 tracking-wide">
+            {subtitle}
+          </span>
+        ) : null}
       </div>
     );
 
