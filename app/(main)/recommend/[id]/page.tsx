@@ -289,23 +289,23 @@ function RecommendDetailContent() {
       {/* Universal Header without login/signup */}
       <SiteHeader />
 
-      <main className="max-w-7xl mx-auto w-full px-6 sm:px-10 lg:px-12 py-8 sm:py-12 space-y-10 sm:space-y-14 flex-1">
+      <main className="max-w-7xl mx-auto w-full px-4 sm:px-8 lg:px-12 py-6 sm:py-12 space-y-8 sm:space-y-14 flex-1">
         {/* 
           Upper Hero Section: Layout modeled after Image #2
           Left: Massive headline & target domain badge
           Right: Workflow description & dynamic status / action button
         */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-end border-b border-border pb-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start lg:items-end border-b border-border pb-8 sm:pb-10">
           {/* Left Hero */}
           <div className="lg:col-span-7 space-y-4">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-card border border-border text-xs font-mono text-foreground shadow-2xs">
               <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
               <span className="text-muted-foreground">{id}</span>
               <span className="text-border">•</span>
-              <span className="truncate max-w-[240px] sm:max-w-md font-medium">{targetUrl}</span>
+              <span className="truncate max-w-[160px] sm:max-w-md font-medium">{targetUrl}</span>
             </div>
 
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[52px] font-extrabold tracking-tight text-foreground leading-[1.08]">
+            <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-[52px] font-extrabold tracking-tight text-foreground leading-[1.12] sm:leading-[1.08]">
               Your workflow
               <br />
               made efficient
@@ -381,7 +381,7 @@ function RecommendDetailContent() {
           {/* Horizontally scrollable step cards container */}
           <div
             ref={scrollContainerRef}
-            className="flex items-stretch gap-6 overflow-x-auto pb-4 pt-2 no-scrollbar scroll-smooth"
+            className="flex items-stretch gap-4 sm:gap-6 overflow-x-auto pb-4 pt-2 no-scrollbar scroll-smooth touch-pan-x"
           >
             {STEP_CONFIGS.map((step) => {
               const isStepActive = activeStep === step.id;
@@ -397,7 +397,7 @@ function RecommendDetailContent() {
                     backgroundColor: step.bgColor,
                     borderColor: isStepActive ? "#111827" : "transparent",
                   }}
-                  className={`relative flex-none w-[240px] sm:w-[270px] md:w-[290px] rounded-2xl p-5 sm:p-6 transition-all duration-300 cursor-pointer flex flex-col justify-between select-none border-2 ${
+                  className={`relative flex-none w-[220px] sm:w-[270px] md:w-[290px] rounded-2xl p-4 sm:p-6 transition-all duration-300 cursor-pointer flex flex-col justify-between select-none border-2 ${
                     isStepActive
                       ? "shadow-[0_16px_36px_rgba(0,0,0,0.14)] -translate-y-1 scale-[1.02]"
                       : "shadow-[0_6px_20px_rgba(0,0,0,0.06)] hover:-translate-y-0.5 hover:shadow-md"
@@ -466,10 +466,10 @@ function RecommendDetailContent() {
           Step Output Text Section: Dynamic log console
           Updates automatically during auto-carousel or when any step is clicked.
         */}
-        <div className="rounded-2xl bg-neutral-950 text-neutral-100 p-5 sm:p-7 shadow-lg border border-neutral-800 space-y-4">
-          <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
-            <div className="flex items-center gap-2.5">
-              <Terminal className="w-4 h-4 text-emerald-400" />
+        <div className="rounded-2xl bg-neutral-950 text-neutral-100 p-4 sm:p-7 shadow-lg border border-neutral-800 space-y-3 sm:space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-800 pb-3">
+            <div className="flex items-center gap-2 sm:gap-2.5">
+              <Terminal className="w-4 h-4 text-emerald-400 shrink-0" />
               <span className="text-xs font-mono font-bold tracking-wider uppercase text-neutral-300">
                 步骤 {activeConfig.id} 控制台输出 • {activeConfig.title}
               </span>

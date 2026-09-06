@@ -9,7 +9,7 @@ export function FloatingBooks() {
           animation: "float-in-top-left 1.35s cubic-bezier(0.16, 1, 0.3, 1) 0.08s both",
           willChange: "transform, opacity",
         }}
-        className="absolute -top-12 -left-10 w-[190px] sm:w-[220px] md:w-[250px] h-[250px] sm:h-[280px] md:h-[320px] rounded-2xl bg-[#E3E2DC] border border-black/5 shadow-[0_20px_50px_rgba(0,0,0,0.12)] p-5 flex flex-col justify-between"
+        className="absolute -top-12 -left-10 w-[190px] sm:w-[220px] md:w-[250px] h-[250px] sm:h-[280px] md:h-[320px] rounded-2xl bg-[#E3E2DC] border border-black/5 shadow-[0_20px_50px_rgba(0,0,0,0.12)] p-5 flex flex-col justify-between scale-75 sm:scale-100 origin-top-left opacity-35 sm:opacity-100"
       >
         <div className="text-right font-serif text-[#1D1D1F] space-y-0.5 text-xs">
           <p>The</p>
@@ -32,7 +32,7 @@ export function FloatingBooks() {
           animation: "float-in-top-right 1.35s cubic-bezier(0.16, 1, 0.3, 1) 0.22s both",
           willChange: "transform, opacity",
         }}
-        className="absolute -top-12 -right-10 w-[190px] sm:w-[220px] md:w-[250px] h-[250px] sm:h-[280px] md:h-[320px] rounded-2xl bg-[#2FD658] border border-black/5 shadow-[0_20px_50px_rgba(0,0,0,0.12)] p-6 flex flex-col justify-between text-black"
+        className="absolute -top-12 -right-10 w-[190px] sm:w-[220px] md:w-[250px] h-[250px] sm:h-[280px] md:h-[320px] rounded-2xl bg-[#2FD658] border border-black/5 shadow-[0_20px_50px_rgba(0,0,0,0.12)] p-6 flex flex-col justify-between text-black scale-75 sm:scale-100 origin-top-right opacity-35 sm:opacity-100"
       >
         <div className="space-y-1">
           <div className="w-10 h-3 bg-black rounded-xs flex items-center justify-center">
@@ -49,7 +49,7 @@ export function FloatingBooks() {
           animation: "float-in-mid-left 1.35s cubic-bezier(0.16, 1, 0.3, 1) 0.36s both",
           willChange: "transform, opacity",
         }}
-        className="absolute top-1/2 -translate-y-1/2 -left-12 w-[180px] sm:w-[210px] md:w-[240px] h-[240px] sm:h-[280px] md:h-[310px] rounded-2xl bg-[#18181A] border border-black/5 shadow-[0_25px_60px_rgba(0,0,0,0.18)] p-5 sm:p-6 flex flex-col justify-between text-white"
+        className="hidden sm:flex absolute top-1/2 -translate-y-1/2 -left-12 w-[180px] sm:w-[210px] md:w-[240px] h-[240px] sm:h-[280px] md:h-[310px] rounded-2xl bg-[#18181A] border border-black/5 shadow-[0_25px_60px_rgba(0,0,0,0.18)] p-5 sm:p-6 flex-col justify-between text-white"
       >
         <span className="text-[10px] font-mono text-neutral-400">01</span>
         <h3 className="text-7xl sm:text-8xl font-black tracking-tighter leading-none my-auto">ID</h3>
@@ -64,7 +64,7 @@ export function FloatingBooks() {
           animation: "float-in-mid-right 1.35s cubic-bezier(0.16, 1, 0.3, 1) 0.50s both",
           willChange: "transform, opacity",
         }}
-        className="absolute top-1/2 -translate-y-1/2 -right-10 w-[180px] sm:w-[210px] md:w-[240px] h-[240px] sm:h-[280px] md:h-[310px] rounded-2xl bg-[#212124] border border-black/5 shadow-[0_25px_60px_rgba(0,0,0,0.18)] p-5 sm:p-6 flex flex-col justify-between text-white"
+        className="hidden sm:flex absolute top-1/2 -translate-y-1/2 -right-10 w-[180px] sm:w-[210px] md:w-[240px] h-[240px] sm:h-[280px] md:h-[310px] rounded-2xl bg-[#212124] border border-black/5 shadow-[0_25px_60px_rgba(0,0,0,0.18)] p-5 sm:p-6 flex-col justify-between text-white"
       >
         <div className="space-y-1">
           <h4 className="text-sm font-bold leading-tight">Principles of Logo Design</h4>
@@ -89,7 +89,7 @@ export function FloatingBooks() {
           animation: "float-in-bottom-left 1.35s cubic-bezier(0.16, 1, 0.3, 1) 0.64s both",
           willChange: "transform, opacity",
         }}
-        className="absolute -bottom-10 -left-6 w-[180px] sm:w-[210px] md:w-[240px] h-[240px] sm:h-[270px] md:h-[300px] rounded-2xl bg-[#E62070] border border-black/5 shadow-[0_25px_60px_rgba(0,0,0,0.18)] p-5 flex flex-col justify-between text-white overflow-hidden"
+        className="absolute -bottom-10 -left-6 w-[180px] sm:w-[210px] md:w-[240px] h-[240px] sm:h-[270px] md:h-[300px] rounded-2xl bg-[#E62070] border border-black/5 shadow-[0_25px_60px_rgba(0,0,0,0.18)] p-5 flex flex-col justify-between text-white overflow-hidden scale-75 sm:scale-100 origin-bottom-left opacity-35 sm:opacity-100"
       >
         <div className="relative z-10">
           <h4 className="text-sm font-bold">Paula Scher: Works</h4>
@@ -117,7 +117,7 @@ export function FloatingBooks() {
           animation: "float-in-bottom-center 1.35s cubic-bezier(0.16, 1, 0.3, 1) 0.78s both",
           willChange: "transform, opacity",
         }}
-        className="absolute -bottom-10 left-1/2 -translate-x-1/2 w-[190px] sm:w-[220px] md:w-[250px] h-[250px] sm:h-[280px] md:h-[310px] rounded-2xl bg-white border border-neutral-200 shadow-[0_25px_60px_rgba(0,0,0,0.18)] p-6 flex flex-col justify-between text-black"
+        className="hidden sm:flex absolute -bottom-10 left-1/2 -translate-x-1/2 w-[190px] sm:w-[220px] md:w-[250px] h-[250px] sm:h-[280px] md:h-[310px] rounded-2xl bg-white border border-neutral-200 shadow-[0_25px_60px_rgba(0,0,0,0.18)] p-6 flex-col justify-between text-black"
       >
         <div>
           <h3 className="text-5xl sm:text-6xl font-black tracking-tighter leading-none">
@@ -138,7 +138,7 @@ export function FloatingBooks() {
           animation: "float-in-bottom-right 1.35s cubic-bezier(0.16, 1, 0.3, 1) 0.92s both",
           willChange: "transform, opacity",
         }}
-        className="absolute -bottom-10 -right-6 w-[180px] sm:w-[210px] md:w-[240px] h-[240px] sm:h-[270px] md:h-[300px] rounded-2xl bg-[#FCEB38] border border-black/5 shadow-[0_25px_60px_rgba(0,0,0,0.18)] p-5 flex flex-col justify-between text-neutral-900"
+        className="absolute -bottom-10 -right-6 w-[180px] sm:w-[210px] md:w-[240px] h-[240px] sm:h-[270px] md:h-[300px] rounded-2xl bg-[#FCEB38] border border-black/5 shadow-[0_25px_60px_rgba(0,0,0,0.18)] p-5 flex flex-col justify-between text-neutral-900 scale-75 sm:scale-100 origin-bottom-right opacity-35 sm:opacity-100"
       >
         <div className="space-y-1">
           <h3 className="text-xl font-black uppercase leading-tight">

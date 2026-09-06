@@ -59,12 +59,12 @@ export default function RecommendInputPage() {
         <FloatingBooks />
 
         {/* Top Branding */}
-        <header className="pt-6 sm:pt-8 md:pt-10 px-6 flex justify-center items-center z-10 flex-none">
+        <header className="pt-4 sm:pt-8 md:pt-10 px-4 sm:px-6 flex justify-center items-center z-10 flex-none">
           <Logo variant="hero" href="/" />
         </header>
 
         {/* Center: Sleek Modern Input Bar without headline text */}
-        <section className="px-6 py-4 w-full max-w-2xl mx-auto z-10 flex flex-col items-center my-auto">
+        <section className="px-4 sm:px-6 py-4 w-full max-w-2xl mx-auto z-10 flex flex-col items-center my-auto">
           <form
             onSubmit={handleSubmit}
             className="w-full bg-card/95 backdrop-blur-md rounded-2xl sm:rounded-full border border-input shadow-xs p-2 sm:p-2.5 flex flex-col sm:flex-row items-center gap-2 sm:gap-3 transition-all focus-within:border-primary focus-within:ring-4 focus-within:ring-ring/10"
@@ -100,14 +100,14 @@ export default function RecommendInputPage() {
           )}
 
           {/* Quick Preset Chips */}
-          <div className="mt-4 sm:mt-5 flex flex-wrap items-center justify-center gap-2">
+          <div className="mt-3 sm:mt-5 flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 px-2">
             <span className="text-xs text-muted-foreground font-medium mr-1">{t("presetLabel")}</span>
             {PRESET_URLS.map((preset) => (
               <button
                 key={preset.name}
                 type="button"
                 onClick={() => handleSelectPreset(preset.url)}
-                className="px-3 py-1 rounded-full bg-card/85 backdrop-blur-xs border border-border text-[11px] sm:text-xs text-foreground font-medium hover:bg-muted hover:border-input transition-all shadow-2xs"
+                className="px-2.5 sm:px-3 py-1 rounded-full bg-card/85 backdrop-blur-xs border border-border text-[11px] sm:text-xs text-foreground font-medium hover:bg-muted hover:border-input transition-all shadow-2xs"
               >
                 {preset.name}
               </button>

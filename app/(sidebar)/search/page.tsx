@@ -20,10 +20,10 @@ export default async function SearchPage({ searchParams }: Props) {
   const apps = await searchApps(query);
 
   return (
-    <div className="p-8 w-full space-y-8">
+    <div className="p-4 sm:p-6 lg:p-8 w-full space-y-6 sm:space-y-8 bg-background text-foreground transition-colors duration-200">
       {/* Search Header matching Image #6 */}
       <div className="border-b border-border pb-4">
-        <h1 className="text-3xl font-extrabold text-foreground tracking-tight">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
           {t("resultsFor", { query })}
         </h1>
         <p className="text-xs text-muted-foreground mt-1 font-medium">
@@ -33,7 +33,7 @@ export default async function SearchPage({ searchParams }: Props) {
 
       {/* 3-Column Grid matching Image #6 */}
       {apps.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {apps.map((app) => (
             <SearchCard key={app.id} app={app} />
           ))}

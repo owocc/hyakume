@@ -226,7 +226,7 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
   return (
     <div className="w-full bg-background text-foreground transition-colors duration-200">
       {/* 1. App Store Hero Header Banner with Backdrop Cover Blur */}
-      <div className="relative w-full rounded-none overflow-hidden text-white px-6 sm:px-10 lg:px-16 py-12 lg:py-16 border-b border-border/40 shadow-xs bg-neutral-900">
+      <div className="relative w-full rounded-none overflow-hidden text-white px-4 sm:px-10 lg:px-16 py-8 sm:py-12 lg:py-16 border-b border-border/40 shadow-xs bg-neutral-900">
         {/* Blurred ambient cover background */}
         {app.cover_url && (
           <div
@@ -236,8 +236,8 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
         )}
         <div className="absolute inset-0 bg-black/40 backdrop-blur-2xl pointer-events-none" />
 
-        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-end justify-between gap-6">
-          <div className="flex items-start gap-6">
+        <div className="relative z-10 flex flex-col md:flex-row items-center md:items-end justify-between gap-6">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-4 sm:gap-6">
             <img
               src={app.icon_url}
               alt={app.name}
@@ -249,16 +249,16 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
                   // ignore
                 }
               }}
-              className="w-28 h-28 lg:w-32 lg:h-32 rounded-[28px] object-cover shadow-2xl border border-white/20 shrink-0 bg-white"
+              className="w-24 h-24 sm:w-28 sm:h-28 lg:w-32 lg:h-32 rounded-2xl sm:rounded-[28px] object-cover shadow-2xl border border-white/20 shrink-0 bg-white"
             />
             <div className="space-y-1.5">
-              <h1 className="text-3xl lg:text-4xl font-extrabold tracking-tight text-white">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-white">
                 {app.name}
               </h1>
-              <p className="text-base text-gray-200 font-medium">
+              <p className="text-sm sm:text-base text-gray-200 font-medium">
                 {app.tagline}
               </p>
-              <div className="flex flex-wrap items-center gap-2 pt-1">
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-1">
                 <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-white/20 text-white backdrop-blur-md">
                   {app.price || t("freeWebApp")}
                 </span>
@@ -307,16 +307,16 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
       </div>
 
       {/* Main Content Body Container */}
-      <div className="w-full px-6 sm:px-10 lg:px-16 py-8 space-y-12">
+      <div className="w-full px-4 sm:px-10 lg:px-16 py-6 sm:py-8 space-y-8 sm:space-y-12">
         {/* 2. Metadata / Key Metrics Row: 3 items (Rating, Age, Size/Platform). 排行榜、开发者、语言已移除 */}
-        <div className="grid grid-cols-3 divide-x divide-border border-y border-border py-4 text-center">
+        <div className="grid grid-cols-3 divide-x divide-border border-y border-border py-3 sm:py-4 text-center">
           {/* Metric 1: Rating (真实评分) */}
-          <div className="py-2 md:py-0 px-2 flex flex-col items-center justify-center">
-            <span className="text-[11px] font-medium text-muted-foreground">
+          <div className="py-1 sm:py-2 md:py-0 px-1 sm:px-2 flex flex-col items-center justify-center">
+            <span className="text-[10px] sm:text-[11px] font-medium text-muted-foreground">
               {t("ratingsCount", { count: totalRatingsCount })}
             </span>
             <div className="flex items-center gap-1 mt-0.5">
-              <span className="text-lg font-bold text-foreground">
+              <span className="text-base sm:text-lg font-bold text-foreground">
                 {averageScore.toFixed(1)}
               </span>
               <div className="flex text-[#FF9500] text-xs">
@@ -326,21 +326,21 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
           </div>
 
           {/* Metric 2: Age Rating */}
-          <div className="py-2 md:py-0 px-2 flex flex-col items-center justify-center">
-            <span className="text-[11px] font-medium text-muted-foreground">
+          <div className="py-1 sm:py-2 md:py-0 px-1 sm:px-2 flex flex-col items-center justify-center">
+            <span className="text-[10px] sm:text-[11px] font-medium text-muted-foreground">
               {t("ageRating")}
             </span>
-            <span className="text-lg font-bold text-foreground mt-0.5">
+            <span className="text-base sm:text-lg font-bold text-foreground mt-0.5">
               {app.age_rating || "12+"}
             </span>
           </div>
 
           {/* Metric 3: Size / Platform */}
-          <div className="py-2 md:py-0 px-2 flex flex-col items-center justify-center">
-            <span className="text-[11px] font-medium text-muted-foreground">
+          <div className="py-1 sm:py-2 md:py-0 px-1 sm:px-2 flex flex-col items-center justify-center">
+            <span className="text-[10px] sm:text-[11px] font-medium text-muted-foreground">
               {t("sizePlatform")}
             </span>
-            <span className="text-lg font-bold text-foreground mt-0.5">
+            <span className="text-base sm:text-lg font-bold text-foreground mt-0.5">
               {app.size || "Web App"}
             </span>
           </div>
@@ -360,7 +360,7 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
             </div>
           ) : (
             <div className="space-y-2">
-              <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-none snap-x">
+              <div className="flex gap-3 sm:gap-4 overflow-x-auto pb-4 no-scrollbar scroll-smooth snap-x touch-pan-x">
                 {previewImages.map((img, i) => {
                   const device = getImageDevice(img, i);
                   return (
@@ -381,7 +381,7 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
                         </div>
                       )}
                       {failedImages[i] ? (
-                        <div className="h-[260px] sm:h-[320px] w-[460px] max-w-[85vw] bg-muted flex flex-col items-center justify-center text-muted-foreground gap-2 select-none border border-border">
+                        <div className="h-[200px] sm:h-[280px] md:h-[320px] w-[300px] sm:w-[460px] max-w-[85vw] bg-muted flex flex-col items-center justify-center text-muted-foreground gap-2 select-none border border-border">
                           <ImageOff className="w-8 h-8 stroke-[1.5]" />
                           <span className="text-xs font-medium">{t("noPreview")}</span>
                         </div>
@@ -392,7 +392,7 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
                           onError={() => {
                             setFailedImages((prev) => ({ ...prev, [i]: true }));
                           }}
-                          className="h-[260px] sm:h-[320px] w-auto max-w-[620px] object-cover transition duration-300 group-hover:scale-[1.01]"
+                          className="h-[200px] sm:h-[280px] md:h-[320px] w-auto max-w-[85vw] sm:max-w-[620px] object-cover transition duration-300 group-hover:scale-[1.01]"
                         />
                       )}
                     </div>
@@ -472,8 +472,8 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
           </div>
 
           {/* Rating Breakdown & Real Interactive Rating Box */}
-          <div className="bg-card border border-border p-6 rounded-2xl shadow-xs space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-8">
+          <div className="bg-card border border-border p-4 sm:p-6 rounded-2xl shadow-xs space-y-5 sm:space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-6 sm:gap-8">
               {/* Overall Score & Real Count */}
               <div className="shrink-0 min-w-[130px]">
                 <div className="text-5xl font-extrabold text-foreground tracking-tight">
@@ -532,8 +532,7 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
                     (hasRated ? t("rateThanks") : t("ratePrompt"))}
                 </p>
               </div>
-
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
                 {/* 5 Interactive Stars */}
                 <div
                   className="flex items-center gap-1"
@@ -612,8 +611,8 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
 
         {/* Review Modal */}
         {showReviewModal && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-card border border-border text-foreground rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
+            <div className="bg-card border border-border text-foreground rounded-2xl sm:rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
               <h3 className="text-lg font-bold text-foreground">{t("writeReview")}</h3>
               <form onSubmit={handleReviewSubmit} className="space-y-3">
                 <div>
@@ -725,7 +724,7 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
           {/* 2 Privacy Cards Side by Side */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Linked Data Card */}
-            <div className="bg-card p-6 rounded-2xl border border-border text-center space-y-3 shadow-xs">
+            <div className="bg-card p-4 sm:p-6 rounded-2xl border border-border text-center space-y-3 shadow-xs">
               <div className="w-12 h-12 mx-auto rounded-full bg-secondary flex items-center justify-center text-foreground">
                 <UserCheck className="w-6 h-6" />
               </div>
@@ -748,7 +747,7 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
             </div>
 
             {/* Not Linked Data Card */}
-            <div className="bg-card p-6 rounded-2xl border border-border text-center space-y-3 shadow-xs">
+            <div className="bg-card p-4 sm:p-6 rounded-2xl border border-border text-center space-y-3 shadow-xs">
               <div className="w-12 h-12 mx-auto rounded-full bg-secondary flex items-center justify-center text-foreground">
                 <UserX className="w-6 h-6" />
               </div>
@@ -793,8 +792,7 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
               {t("privacyPolicy")} ↗
             </a>
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 text-xs bg-card p-6 rounded-2xl border border-border shadow-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 text-xs bg-card p-4 sm:p-6 rounded-2xl border border-border shadow-xs">
             <div>
               <span className="text-muted-foreground block mb-0.5">{t("size")}</span>
               <span className="font-semibold text-foreground">{app.size || "Web App"}</span>
@@ -905,11 +903,11 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
       {activeImageIndex !== null && previewImages[activeImageIndex] && (
         <div
           onClick={() => setActiveImageIndex(null)}
-          className="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4 sm:p-8 animate-fade-in select-none"
+          className="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-2 sm:p-8 animate-fade-in select-none"
         >
           <button
             onClick={() => setActiveImageIndex(null)}
-            className="absolute top-4 right-4 sm:top-6 sm:right-6 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition cursor-pointer z-50 border border-white/20"
+            className="absolute top-3 right-3 sm:top-6 sm:right-6 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition cursor-pointer z-50 border border-white/20"
             aria-label="Close"
           >
             <X className="w-5 h-5" />
@@ -923,10 +921,10 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
                   prev !== null && prev > 0 ? prev - 1 : previewImages.length - 1
                 );
               }}
-              className="absolute left-4 sm:left-6 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition cursor-pointer z-50 border border-white/20"
+              className="absolute left-2 sm:left-6 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition cursor-pointer z-50 border border-white/20"
               aria-label="Previous"
             >
-              <ChevronLeft className="w-6 h-6" />
+              <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
             </button>
           )}
 
@@ -967,10 +965,10 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
                     : 0
                 );
               }}
-              className="absolute right-4 sm:right-6 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition cursor-pointer z-50 border border-white/20"
+              className="absolute right-2 sm:right-6 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition cursor-pointer z-50 border border-white/20"
               aria-label="Next"
             >
-              <ChevronRight className="w-6 h-6" />
+              <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
             </button>
           )}
         </div>

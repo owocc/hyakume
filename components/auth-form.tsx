@@ -129,20 +129,20 @@ export function AuthForm({ initialMode = "login" }: AuthFormProps) {
       {/* Return Home Floating Link */}
       <Link
         href="/"
-        className="absolute top-4 left-4 sm:top-6 sm:left-6 z-20 flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 active:bg-white/30 backdrop-blur-md text-white text-xs font-medium transition border border-white/15 shadow-sm"
+        className="absolute top-3 left-3 sm:top-6 sm:left-6 z-20 flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 active:bg-white/30 backdrop-blur-md text-white text-xs font-medium transition border border-white/15 shadow-sm"
       >
         <ArrowLeft className="w-3.5 h-3.5" />
         <span>返回首页</span>
       </Link>
 
       {/* Main Container Card */}
-      <div className="w-full max-w-[1040px] bg-white rounded-[28px] sm:rounded-[36px] shadow-[0_25px_70px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col md:flex-row border border-white/20 transition-all duration-300">
+      <div className="w-full max-w-[1040px] bg-white rounded-2xl sm:rounded-[36px] shadow-[0_25px_70px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col md:flex-row border border-white/20 transition-all duration-300">
         {/* Left Column: Form Content */}
-        <div className="w-full md:w-1/2 p-6 sm:p-10 md:p-12 lg:p-14 flex flex-col justify-center">
+        <div className="w-full md:w-1/2 p-5 sm:p-10 md:p-12 lg:p-14 flex flex-col justify-center">
           <div className="max-w-[380px] w-full mx-auto">
             {/* Header Title & Subtitle */}
             <div className="text-center md:text-left mb-6 sm:mb-8">
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-[#111827] tracking-tight flex items-center justify-center md:justify-start gap-2">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-[#111827] tracking-tight flex items-center justify-center md:justify-start gap-2">
                 <span>{mode === "login" ? "Welcome back" : "Create an account"}</span>
                 <span className="inline-block transform hover:rotate-12 transition-transform duration-200">
                   {mode === "login" ? "👋" : "✨"}

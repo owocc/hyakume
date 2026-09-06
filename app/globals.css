@@ -316,3 +316,20 @@ body {
     color: inherit;
   }
 }
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .touch-pan-x {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}

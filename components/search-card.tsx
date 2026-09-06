@@ -25,14 +25,14 @@ export function SearchCard({ app }: Props) {
       : "grid-cols-2 sm:grid-cols-4";
 
   return (
-    <div className="bg-card rounded-3xl p-5 border border-border hover:border-neutral-400/70 transition-colors flex flex-col justify-between group shadow-xs">
+    <div className="bg-card rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-border hover:border-neutral-400/70 transition-colors flex flex-col justify-between group shadow-xs">
       {/* Top Row: Icon, Title, Rating, 查看 Button (Flat, no heavy shadows) */}
       <div className="flex items-start justify-between gap-3 mb-4">
         <Link href={`/app/${app.id}`} className="flex items-center gap-3 min-w-0">
           <img
             src={app.icon_url}
             alt={app.name}
-            className="w-12 h-12 rounded-xl object-cover group-hover:scale-105 transition-transform shrink-0"
+            className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl object-cover group-hover:scale-105 transition-transform shrink-0"
           />
           <div className="min-w-0">
             <h3 className="font-bold text-sm text-foreground truncate group-hover:text-primary transition-colors">
@@ -70,7 +70,7 @@ export function SearchCard({ app }: Props) {
       {screenshots.length > 0 && (
         <Link
           href={`/app/${app.id}`}
-          className={`grid ${gridColsClass} gap-2 bg-surface p-2.5 rounded-2xl border border-border/60 overflow-hidden`}
+          className={`grid ${gridColsClass} gap-1.5 sm:gap-2 bg-surface p-2 sm:p-2.5 rounded-xl sm:rounded-2xl border border-border/60 overflow-hidden`}
         >
           {screenshots.map((imgUrl, i) => {
             const getDevice = () => {

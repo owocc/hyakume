@@ -19,7 +19,7 @@ function WebApp3DIcon() {
         height="44"
         viewBox="0 0 48 48"
         fill="none"
-        className="w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 inline-block drop-shadow-md"
+        className="w-7 h-7 sm:w-10 sm:h-10 md:w-11 md:h-11 inline-block drop-shadow-md"
       >
         {/* Shadow / depth underlay */}
         <rect x="10" y="8" width="30" height="30" rx="9" fill="#000000" opacity="0.35" />
@@ -72,34 +72,34 @@ export default async function LandingPage() {
       */}
       <div className="h-[100dvh] max-h-[100dvh] w-full flex flex-col justify-between overflow-hidden relative flex-none">
         {/* Top Section: Centered Logo & Branding */}
-        <header className="pt-6 sm:pt-8 md:pt-9 px-6 flex justify-center items-center z-10 flex-none">
+        <header className="pt-[18vh] sm:pt-[12vh] md:pt-9 px-4 sm:px-6 flex justify-center items-center z-10 flex-none">
           <Logo variant="hero" href="/" />
         </header>
 
         {/* Hero Section: Centered Headline, Subtitle, Dual CTAs */}
-        <section className="px-6 py-2 text-center max-w-3xl mx-auto z-10 flex flex-col items-center flex-none">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[52px] font-extrabold tracking-tight text-foreground leading-[1.12]">
+        <section className="px-4 sm:px-6 py-2 text-center max-w-3xl mx-auto z-10 flex flex-col items-center flex-none">
+          <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-[52px] font-extrabold tracking-tight text-foreground leading-[1.15] sm:leading-[1.12]">
             {t("heading1")}
             <br />
             {t("heading2")} <WebApp3DIcon /> {t("heading3")}
           </h1>
 
-          <p className="text-xs sm:text-sm md:text-base text-muted-foreground font-normal mt-2.5 sm:mt-3.5 max-w-lg mx-auto leading-relaxed">
+          <p className="text-xs sm:text-sm md:text-base text-muted-foreground font-normal mt-2 sm:mt-3.5 max-w-lg mx-auto leading-relaxed px-2">
             {t("subtitle")}
           </p>
 
           {/* Dual Actions: 推荐 / 投放 on left, View Apps on right */}
-          <div className="mt-4 sm:mt-5 flex items-center justify-center gap-3">
+          <div className="mt-3.5 sm:mt-5 flex items-center justify-center gap-2.5 sm:gap-3">
             <Link
               href="/recommend"
-              className="inline-flex items-center justify-center px-5 py-2.5 rounded-full bg-card text-foreground text-xs sm:text-sm font-medium border border-border hover:bg-surface active:scale-[0.98] transition-all duration-200 shadow-2xs hover:shadow-xs"
+              className="inline-flex items-center justify-center px-4 sm:px-5 py-2 sm:py-2.5 rounded-full bg-card text-foreground text-xs sm:text-sm font-medium border border-border hover:bg-surface active:scale-[0.98] transition-all duration-200 shadow-2xs hover:shadow-xs"
             >
               <span>{t("submitCta")}</span>
             </Link>
 
             <Link
               href="/apps"
-              className="inline-flex items-center justify-center px-6 py-2.5 rounded-full bg-primary text-primary-foreground text-xs sm:text-sm font-medium hover:bg-primary-hover active:scale-[0.98] transition-all duration-200 shadow-sm hover:shadow-md"
+              className="inline-flex items-center justify-center px-5 sm:px-6 py-2 sm:py-2.5 rounded-full bg-primary text-primary-foreground text-xs sm:text-sm font-medium hover:bg-primary-hover active:scale-[0.98] transition-all duration-200 shadow-sm hover:shadow-md"
             >
               {t("viewApps")}
             </Link>

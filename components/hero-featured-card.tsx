@@ -14,7 +14,7 @@ export function HeroFeaturedCard({ app, tag }: Props) {
   return (
     <Link
       href={`/app/${app.id}`}
-      className="group relative flex-1 min-h-[460px] rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-border/80 flex flex-col justify-end isolate [transform:translateZ(0)]"
+      className="group relative flex-1 min-h-[340px] sm:min-h-[420px] lg:min-h-[460px] rounded-2xl sm:rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-border/80 flex flex-col justify-end isolate [transform:translateZ(0)]"
       style={{
         // Forces WebKit/Blink hardware compositor to antialias rounded corner clipping perfectly without subpixel dark fringing
         WebkitMaskImage: "-webkit-radial-gradient(white, black)",
@@ -42,13 +42,13 @@ export function HeroFeaturedCard({ app, tag }: Props) {
       <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/95 via-black/60 via-40% to-transparent" />
 
       {/* Content Container (Positioned at bottom over the blurred, darkened area) */}
-      <div className="relative z-10 p-6 md:p-7 space-y-4">
+      <div className="relative z-10 p-4 sm:p-6 md:p-7 space-y-3 sm:space-y-4">
         {/* Upper text block: Tag, Title, Tagline */}
         <div className="space-y-1.5 max-w-2xl">
           <span className="text-xs font-semibold uppercase tracking-wider text-white/80 drop-shadow-sm block">
             {tag}
           </span>
-          <h2 className="text-2xl lg:text-3xl font-extrabold text-white leading-snug tracking-tight drop-shadow-md">
+          <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-white leading-snug tracking-tight drop-shadow-md">
             {app.name}：{app.tagline}
           </h2>
           {app.preview_features && app.preview_features.length > 0 && (
@@ -64,7 +64,7 @@ export function HeroFeaturedCard({ app, tag }: Props) {
             <img
               src={app.icon_url}
               alt={app.name}
-              className="w-12 h-12 rounded-xl object-cover shadow-md shrink-0 border border-white/15"
+              className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl object-cover shadow-md shrink-0 border border-white/15"
             />
             <div className="min-w-0">
               <h3 className="font-bold text-sm leading-tight text-white truncate drop-shadow-sm">

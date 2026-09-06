@@ -31,19 +31,19 @@ export default async function GamesPage() {
   const dateString = formatLocalizedDate(new Date(), locale);
 
   return (
-    <div className="p-8 w-full space-y-12 bg-background text-foreground transition-colors duration-200">
+    <div className="p-4 sm:p-6 lg:p-8 w-full space-y-8 sm:space-y-10 lg:space-y-12 bg-background text-foreground transition-colors duration-200">
         {/* Games Header */}
         <div className="border-b border-border pb-4">
           <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
             {dateString}
           </p>
-          <div className="flex items-center justify-between mt-1">
-            <h1 className="text-3xl sm:text-4xl font-extrabold text-foreground tracking-tight">
+          <div className="flex flex-wrap items-center justify-between gap-3 mt-1">
+            <h1 className="text-2xl sm:text-4xl font-extrabold text-foreground tracking-tight">
               {t("title")}
             </h1>
             <Link
               href="/recommend"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-foreground text-background text-xs font-semibold hover:opacity-90 transition"
+              className="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-foreground text-background text-xs font-semibold hover:opacity-90 transition"
             >
               <PlusCircle className="w-3.5 h-3.5" />
               {tCommon("submit")}
@@ -65,7 +65,7 @@ export default async function GamesPage() {
             </div>
           </div>
         ) : (
-          <div className="space-y-12">
+        <div className="space-y-8 sm:space-y-10 lg:space-y-12">
             {/* Row 1: Left Wide (Hero Banner), Right Narrow (热门游戏列表) */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
               {heroApp && (
@@ -75,7 +75,7 @@ export default async function GamesPage() {
               )}
 
               {/* Right Narrow: 热门游戏列表 (5 cols) */}
-              <div className="lg:col-span-5 bg-card rounded-3xl p-6 border border-border flex flex-col justify-between shadow-xs">
+              <div className="lg:col-span-5 bg-card rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-border flex flex-col justify-between shadow-xs">
                 <div>
                   <div className="flex items-center justify-between mb-4">
                     <div>
@@ -139,7 +139,7 @@ export default async function GamesPage() {
 
             {/* Row 2: Reversed! Left Narrow (休闲推荐列表), Right Wide (主打推荐大卡片) */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-              <div className="lg:col-span-5 bg-card rounded-3xl p-6 border border-border flex flex-col justify-between order-2 lg:order-1 shadow-xs">
+              <div className="lg:col-span-5 bg-card rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-border flex flex-col justify-between order-2 lg:order-1 shadow-xs">
                 <div>
                   <div className="flex items-center justify-between mb-4">
                     <div>
@@ -215,7 +215,7 @@ export default async function GamesPage() {
                 </div>
               )}
 
-              <div className="lg:col-span-5 bg-card rounded-3xl p-6 border border-border flex flex-col justify-between shadow-xs">
+              <div className="lg:col-span-5 bg-card rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-border flex flex-col justify-between shadow-xs">
                 <div>
                   <div className="flex items-center justify-between mb-4">
                     <div>

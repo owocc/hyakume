@@ -11,9 +11,9 @@ export function Footer() {
 
   return (
     <footer className="w-full bg-surface-card border-t border-border text-foreground">
-      <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-16 py-14 sm:py-16 flex flex-col justify-between min-h-[380px]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-10 lg:px-16 py-10 sm:py-16 flex flex-col justify-between min-h-[340px]">
         {/* Main Content: Left Brand & Reserved Illustration space, Right Navigation Columns */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 sm:gap-10 lg:gap-16">
           {/* Left: Brand Identity & Blank space reserved for illustration */}
           <div className="lg:col-span-5 flex flex-col justify-between space-y-6">
             <Logo variant="footer" href="/" size="md" />
@@ -27,7 +27,7 @@ export function Footer() {
           </div>
 
           {/* Right: 3 Navigation Columns matching reference layout */}
-          <div className="lg:col-span-7 grid grid-cols-2 sm:grid-cols-3 gap-8 sm:gap-10">
+          <div className="lg:col-span-7 grid grid-cols-2 sm:grid-cols-3 gap-6 sm:gap-10">
             {/* Column 1 */}
             <div className="space-y-4">
               <h4 className="text-xs sm:text-sm font-bold tracking-tight text-foreground">
@@ -128,7 +128,7 @@ export function Footer() {
         </div>
 
         {/* Bottom Row: Copyright on left, Theme & Language on right */}
-        <div className="border-t border-border pt-8 mt-12 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
+        <div className="border-t border-border pt-6 sm:pt-8 mt-8 sm:mt-12 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground text-center sm:text-left">
           <p>{t("copyright")}</p>
 
           {/* Right side: Language Switcher & Theme Switcher */}

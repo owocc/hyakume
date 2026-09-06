@@ -67,16 +67,16 @@ export default async function CategoryPage({ params }: Props) {
       : apps;
 
   return (
-    <div className="p-6 sm:p-8 md:p-10 w-full space-y-10 max-w-[1440px] mx-auto bg-background text-foreground transition-colors duration-200">
+    <div className="p-4 sm:p-6 md:p-8 lg:p-10 w-full space-y-8 sm:space-y-10 max-w-[1440px] mx-auto bg-background text-foreground transition-colors duration-200">
         {/* Top Header: Category Name */}
-        <div className="border-b border-border pb-5 flex items-center justify-between">
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-foreground tracking-tight">
+        <div className="border-b border-border pb-4 sm:pb-5 flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-2xl sm:text-4xl font-extrabold text-foreground tracking-tight">
             {categoryTitle}
           </h1>
 
           <Link
             href="/recommend"
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-foreground text-background text-xs font-semibold hover:opacity-90 transition"
+            className="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-foreground text-background text-xs font-semibold hover:opacity-90 transition"
           >
             <PlusCircle className="w-3.5 h-3.5" />
             {tCommon("submit")}
@@ -95,9 +95,9 @@ export default async function CategoryPage({ params }: Props) {
             </p>
           </div>
         ) : (
-          <div className="space-y-12">
+          <div className="space-y-8 sm:space-y-12">
             {/* Section 1: 精选{categoryTitle} App > (4 cols x 2 rows = 8 items) */}
-            <section className="space-y-4">
+            <section className="space-y-3 sm:space-y-4">
               <div className="flex items-center gap-1">
                 <h2 className="text-lg sm:text-xl font-bold text-foreground tracking-tight">
                   {locale === "zh-cn"
@@ -107,7 +107,7 @@ export default async function CategoryPage({ params }: Props) {
                 <ChevronRight className="w-4 h-4 text-muted-foreground stroke-[2.5]" />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-3.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-x-6 sm:gap-y-3.5">
                 {featuredSlice.map((app: AppItem) => (
                   <div
                     key={app.id}
@@ -152,11 +152,11 @@ export default async function CategoryPage({ params }: Props) {
                 <ChevronRight className="w-4 h-4 text-muted-foreground stroke-[2.5]" />
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 sm:gap-5">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-5">
                 {freeRankSlice.map((app: AppItem, index: number) => (
                   <div
                     key={`free-${app.id}-${index}`}
-                    className="bg-card rounded-[24px] border border-border shadow-xs hover:shadow-md transition-all p-5 flex flex-col justify-between items-center text-center relative min-h-[230px] group"
+                    className="bg-card rounded-2xl sm:rounded-[24px] border border-border shadow-xs hover:shadow-md transition-all p-3.5 sm:p-5 flex flex-col justify-between items-center text-center relative min-h-[210px] sm:min-h-[230px] group"
                   >
                     {/* Rank Number top-left */}
                     <span className="absolute top-3.5 left-4 text-sm font-medium text-muted-foreground">
@@ -171,7 +171,7 @@ export default async function CategoryPage({ params }: Props) {
                       <img
                         src={app.icon_url}
                         alt={app.name}
-                        className="w-18 h-18 sm:w-20 sm:h-20 rounded-[22px] object-cover shadow-sm group-hover:scale-105 transition-transform mb-3"
+                        className="w-14 h-14 sm:w-18 sm:h-18 md:w-20 md:h-20 rounded-xl sm:rounded-[22px] object-cover shadow-sm group-hover:scale-105 transition-transform mb-2.5 sm:mb-3"
                       />
                       <h4 className="text-xs sm:text-sm font-bold text-foreground line-clamp-1 w-full px-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                         {app.name}
@@ -202,11 +202,11 @@ export default async function CategoryPage({ params }: Props) {
                 <ChevronRight className="w-4 h-4 text-muted-foreground stroke-[2.5]" />
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 sm:gap-5">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-5">
                 {paidRankSlice.map((app: AppItem, index: number) => (
                   <div
                     key={`paid-${app.id}-${index}`}
-                    className="bg-card rounded-[24px] border border-border shadow-xs hover:shadow-md transition-all p-5 flex flex-col justify-between items-center text-center relative min-h-[230px] group"
+                    className="bg-card rounded-2xl sm:rounded-[24px] border border-border shadow-xs hover:shadow-md transition-all p-3.5 sm:p-5 flex flex-col justify-between items-center text-center relative min-h-[210px] sm:min-h-[230px] group"
                   >
                     {/* Rank Number top-left */}
                     <span className="absolute top-3.5 left-4 text-sm font-medium text-muted-foreground">
@@ -221,7 +221,7 @@ export default async function CategoryPage({ params }: Props) {
                       <img
                         src={app.icon_url}
                         alt={app.name}
-                        className="w-18 h-18 sm:w-20 sm:h-20 rounded-[22px] object-cover shadow-sm group-hover:scale-105 transition-transform mb-3"
+                        className="w-14 h-14 sm:w-18 sm:h-18 md:w-20 md:h-20 rounded-xl sm:rounded-[22px] object-cover shadow-sm group-hover:scale-105 transition-transform mb-2.5 sm:mb-3"
                       />
                       <h4 className="text-xs sm:text-sm font-bold text-foreground line-clamp-1 w-full px-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                         {app.name}

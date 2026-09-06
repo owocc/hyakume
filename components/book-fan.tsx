@@ -15,7 +15,6 @@ interface BookItem {
 
 export function BookFan() {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
-
   const books: BookItem[] = [
     // 1. Black "ID" Typographic Book (leftmost in original photo)
     {
@@ -245,11 +244,10 @@ export function BookFan() {
       ),
     },
   ];
-
   return (
-    <div className="relative w-full flex justify-center items-end select-none overflow-hidden pt-2 pb-0">
-      {/* Outer scale container ensures responsive adaptation */}
-      <div className="relative w-full max-w-5xl h-[280px] sm:h-[320px] md:h-[360px] lg:h-[380px] flex justify-center items-end scale-[0.62] xs:scale-[0.72] sm:scale-[0.84] md:scale-[0.94] lg:scale-100 origin-bottom overflow-hidden">
+    <div className="relative w-full flex justify-center items-end select-none overflow-hidden pt-2 pb-0 h-[280px] sm:h-[320px] md:h-[360px] lg:h-[380px]">
+      {/* Cards container: full natural size, no shrinking on mobile, no inner overflow clipping */}
+      <div className="relative w-full flex justify-center items-end h-full">
         {books.map((book, index) => {
           const isHovered = hoveredId === book.id;
           const isAnyHovered = hoveredId !== null;
@@ -266,7 +264,7 @@ export function BookFan() {
                 animation: `book-fan-popup 1.15s cubic-bezier(0.16, 1, 0.3, 1) ${delay}s both`,
                 zIndex: isHovered ? 50 : book.zIndex,
               }}
-              className="absolute bottom-[-30px] sm:bottom-[-25px] md:bottom-[-20px] will-change-transform"
+              className="absolute bottom-[-10px] sm:bottom-[-20px] will-change-transform"
             >
               <Link
                 href="/apps"
