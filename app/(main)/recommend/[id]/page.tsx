@@ -361,27 +361,29 @@ function RecommendDetailContent() {
             <div className="flex flex-wrap items-center gap-3 pt-1">
               {createdApp ? (
                 <div className="flex flex-wrap items-center gap-2.5">
-                  {createdArticle && (
-                    <Link
-                      href={`/article/${createdArticle.id}`}
-                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-primary-foreground text-xs sm:text-sm font-medium hover:bg-primary-hover transition-all shadow-sm"
-                    >
-                      <Sparkles className="w-4 h-4" />
-                      <span>阅读生成的推荐文章</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </Link>
-                  )}
                   <Link
                     href={`/app/${createdApp.id}`}
-                    className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs sm:text-sm font-medium transition-all shadow-sm ${
-                      createdArticle
-                        ? "bg-card border border-border text-foreground hover:bg-surface"
-                        : "bg-primary text-primary-foreground hover:bg-primary-hover"
-                    }`}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-primary-foreground text-xs sm:text-sm font-medium hover:bg-primary-hover transition-all shadow-sm"
                   >
                     <Layers className="w-4 h-4" />
                     <span>查看收录应用详情</span>
                     <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+
+                  <Link
+                    href={`/article/generate?appId=${createdApp.id}`}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-rose-500 text-white text-xs sm:text-sm font-semibold hover:bg-rose-600 transition-all shadow-sm active:scale-95"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    <span>使用打字机撰写专属文章</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+
+                  <Link
+                    href="/dashboard"
+                    className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-card text-foreground text-xs sm:text-sm font-medium border border-border hover:bg-surface transition-all"
+                  >
+                    <span>我的控制台</span>
                   </Link>
                 </div>
               ) : isCompleted && errorMsg ? (

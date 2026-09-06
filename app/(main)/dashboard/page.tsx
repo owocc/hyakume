@@ -533,14 +533,24 @@ function DashboardContent() {
                 </>
               )}
 
-              {/* Publish Action Button */}
-              <Link
-                href="/recommend"
-                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-rose-500 hover:bg-rose-600 active:scale-95 text-white text-xs font-semibold shadow-xs transition"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>推荐新应用</span>
-              </Link>
+              {/* Action Button */}
+              {activeNav === "articles" ? (
+                <Link
+                  href="/article/generate"
+                  className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-rose-500 hover:bg-rose-600 active:scale-95 text-white text-xs font-semibold shadow-xs transition"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>打字机撰写文章</span>
+                </Link>
+              ) : (
+                <Link
+                  href="/recommend"
+                  className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-rose-500 hover:bg-rose-600 active:scale-95 text-white text-xs font-semibold shadow-xs transition"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>推荐新应用</span>
+                </Link>
+              )}
             </div>
           </div>
 
@@ -1241,11 +1251,11 @@ function DashboardContent() {
                             </Link>
 
                             <Link
-                              href={`/recommend?url=${encodeURIComponent(app.url)}`}
-                              className="w-full py-1.5 px-3 rounded-lg text-[11px] text-neutral-500 hover:text-foreground hover:bg-neutral-100 dark:hover:bg-neutral-800 transition text-center flex items-center justify-center gap-1"
+                              href={`/article/generate?appId=${app.id}`}
+                              className="w-full py-1.5 px-3 rounded-lg text-[11px] text-rose-600 dark:text-rose-400 bg-rose-50/70 dark:bg-rose-950/30 hover:bg-rose-100 dark:hover:bg-rose-900/40 transition text-center flex items-center justify-center gap-1 font-semibold"
                             >
-                              <RotateCcw className="w-3 h-3" />
-                              <span>触发 AI 再次更新并撰写新推荐</span>
+                              <Sparkles className="w-3 h-3" />
+                              <span>使用打字机撰写专属推荐</span>
                             </Link>
                           </div>
                         </div>

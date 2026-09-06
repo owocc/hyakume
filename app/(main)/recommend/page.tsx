@@ -7,9 +7,8 @@ import { useSession } from "@/lib/auth-client";
 import { FloatingBooks } from "@/components/floating-books";
 import { Footer } from "@/components/footer";
 import { SiteHeader } from "@/components/site-header";
-import { Globe, ArrowRight, Lock, X, FileText, RefreshCw, ExternalLink, Loader2, Sparkles } from "lucide-react";
+import { Globe, ArrowRight, Lock } from "lucide-react";
 import { Logo } from "@/components/logo";
-import type { AppItem } from "@/lib/types";
 const PRESET_URLS = [
   { name: "GitHub", url: "https://github.com" },
   { name: "Vercel", url: "https://vercel.com" },
@@ -24,11 +23,6 @@ function RecommendInputContent() {
   const queryUrl = searchParams.get("url") || "";
   const [url, setUrl] = useState(queryUrl);
   const [error, setError] = useState("");
-  const [checkingApp, setCheckingApp] = useState(false);
-  const [existingAppPrompt, setExistingAppPrompt] = useState<{
-    app: AppItem;
-    targetUrl: string;
-  } | null>(null);
   const { data: session, isPending } = useSession();
   const t = useTranslations("recommend");
 
@@ -38,7 +32,7 @@ function RecommendInputContent() {
     }
   }, [queryUrl, url]);
 
-  const startPipeline = (target: string, writeArticle: boolean) => {
+  const startPipeline = (target: string) => {
     const recId = "rec_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
     try {
       fetch("/api/user/tasks", {
@@ -47,10 +41,10 @@ function RecommendInputContent() {
         body: JSON.stringify({ id: recId, url: target, status: "processing", step: 1, progress: 20 }),
       }).catch(() => {});
     } catch {}
-    router.push(`/recommend/${recId}?url=${encodeURIComponent(target)}&writeArticle=${writeArticle}`);
+    router.push(`/recommend/${recId}?url=${encodeURIComponent(target)}`);
   };
 
-  const handleSubmit = async (e?: React.FormEvent) => {
+  const handleSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const cleanUrl = url.trim();
 
@@ -72,26 +66,10 @@ function RecommendInputContent() {
       return;
     }
 
-    // Check if application already exists in DB to prevent unwanted duplicate articles
-    setCheckingApp(true);
-    try {
-      const checkRes = await fetch(`/api/analyze?url=${encodeURIComponent(target)}`);
-      if (checkRes.ok) {
-        const checkJson = (await checkRes.json()) as { exists?: boolean; app?: AppItem };
-        if (checkJson.exists && checkJson.app) {
-          setExistingAppPrompt({ app: checkJson.app, targetUrl: target });
-          setCheckingApp(false);
-          return;
-        }
-      }
-    } catch {}
-    setCheckingApp(false);
-
-    // Brand new app: proceed directly
-    startPipeline(target, true);
+    startPipeline(target);
   };
 
-  const handleSelectPreset = async (presetUrl: string) => {
+  const handleSelectPreset = (presetUrl: string) => {
     setUrl(presetUrl);
     setError("");
 
@@ -101,21 +79,7 @@ function RecommendInputContent() {
       return;
     }
 
-    setCheckingApp(true);
-    try {
-      const checkRes = await fetch(`/api/analyze?url=${encodeURIComponent(presetUrl)}`);
-      if (checkRes.ok) {
-        const checkJson = (await checkRes.json()) as { exists?: boolean; app?: AppItem };
-        if (checkJson.exists && checkJson.app) {
-          setExistingAppPrompt({ app: checkJson.app, targetUrl: presetUrl });
-          setCheckingApp(false);
-          return;
-        }
-      }
-    } catch {}
-    setCheckingApp(false);
-
-    startPipeline(presetUrl, true);
+    startPipeline(presetUrl);
   };
   return (
     <div className="w-full bg-background text-foreground flex flex-col selection:bg-primary selection:text-primary-foreground transition-colors duration-200">
@@ -203,116 +167,6 @@ function RecommendInputContent() {
       */}
       <Footer />
 
-      {/* Modal Dialog: When app is already recorded, ask whether to generate a new article */}
-      {existingAppPrompt && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-card border border-border rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl space-y-5 animate-in zoom-in-95 duration-150 relative">
-            {/* Close button */}
-            <button
-              type="button"
-              onClick={() => setExistingAppPrompt(null)}
-              className="absolute top-4 right-4 p-1.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary transition"
-            >
-              <X className="w-4 h-4" />
-            </button>
-
-            {/* Header with App Info */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <img
-                  src={existingAppPrompt.app.icon_url}
-                  alt={existingAppPrompt.app.name}
-                  className="w-12 h-12 rounded-2xl object-cover bg-secondary border border-border shadow-xs shrink-0"
-                />
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-base font-bold text-foreground truncate">
-                      {existingAppPrompt.app.name}
-                    </h3>
-                    <span className="px-2 py-0.5 rounded-full bg-secondary text-[10px] font-semibold text-muted-foreground">
-                      {existingAppPrompt.app.category}
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {existingAppPrompt.app.tagline || existingAppPrompt.app.url}
-                  </p>
-                </div>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-900 dark:text-amber-200 leading-relaxed space-y-1">
-                <p className="font-semibold flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                  <span>检测到该应用已在平台收录</span>
-                </p>
-                <p className="text-muted-foreground">
-                  为防止生成过多重复文章，您可以自主选择：仅刷新应用数据，或者为您生成一篇专属的新推荐解读文章。
-                </p>
-              </div>
-            </div>
-
-            {/* Choices */}
-            <div className="space-y-2.5 pt-1">
-              {/* Option A: Only update app info */}
-              <button
-                type="button"
-                onClick={() => {
-                  const target = existingAppPrompt.targetUrl;
-                  setExistingAppPrompt(null);
-                  startPipeline(target, false);
-                }}
-                className="w-full p-3 rounded-2xl border border-border hover:border-neutral-400 dark:hover:border-neutral-600 bg-secondary/50 hover:bg-secondary transition flex items-center justify-between group cursor-pointer text-left"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-background border border-border flex items-center justify-center text-muted-foreground group-hover:text-foreground">
-                    <RefreshCw className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold text-foreground">仅刷新应用信息</div>
-                    <div className="text-[11px] text-muted-foreground">更新截图与元数据，不重复生成文章</div>
-                  </div>
-                </div>
-                <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
-              </button>
-
-              {/* Option B: Write a new dedicated article */}
-              <button
-                type="button"
-                onClick={() => {
-                  const target = existingAppPrompt.targetUrl;
-                  setExistingAppPrompt(null);
-                  startPipeline(target, true);
-                }}
-                className="w-full p-3 rounded-2xl border border-rose-200 dark:border-rose-900/60 bg-rose-50/70 dark:bg-rose-950/30 hover:bg-rose-100 dark:hover:bg-rose-900/40 transition flex items-center justify-between group cursor-pointer text-left"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-rose-500 text-white flex items-center justify-center shadow-xs">
-                    <FileText className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold text-rose-600 dark:text-rose-400">编写一篇新的专属推荐文章</div>
-                    <div className="text-[11px] text-rose-500/80 dark:text-rose-400/80">由 AI 深度解析并归属到您的账号下</div>
-                  </div>
-                </div>
-                <ArrowRight className="w-4 h-4 text-rose-500 group-hover:translate-x-0.5 transition-transform" />
-              </button>
-
-              {/* Option C: Directly view existing app */}
-              <button
-                type="button"
-                onClick={() => {
-                  const id = existingAppPrompt.app.id;
-                  setExistingAppPrompt(null);
-                  router.push(`/app/${id}`);
-                }}
-                className="w-full py-2 text-center text-xs font-medium text-muted-foreground hover:text-foreground transition flex items-center justify-center gap-1"
-              >
-                <ExternalLink className="w-3 h-3" />
-                <span>无需更新，直接查看商店中已有页面</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import {
   Share2,
   ExternalLink,
@@ -282,7 +283,7 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
           </div>
 
           {/* Action CTAs */}
-          <div className="flex items-center gap-3 w-full md:w-auto shrink-0 pt-2 md:pt-0">
+          <div className="flex flex-wrap items-center gap-3 w-full md:w-auto shrink-0 pt-2 md:pt-0">
             <a
               href={app.url}
               target="_blank"
@@ -292,6 +293,14 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
               <span>{t("visitWebsite")}</span>
               <ExternalLink className="w-4 h-4 stroke-[2.5]" />
             </a>
+
+            <Link
+              href={`/article/generate?appId=${app.id}`}
+              className="px-5 py-2.5 rounded-full bg-rose-500 hover:bg-rose-600 text-white font-bold text-sm shadow-xl transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2 border border-rose-400"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>撰写专属文章</span>
+            </Link>
 
             <button
               onClick={handleShare}
@@ -967,17 +976,24 @@ export function AppDetailClient({ app, initialReviews, otherApps }: Props) {
         {/* 8. Related Topics / AI Generated Recommendation Articles (Image #1 replacement) */}
         {((app.articles && app.articles.length > 0) || (app.related_topics && app.related_topics.length > 0)) && (
           <div className="space-y-4 border-t border-border pt-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <h2 className="text-lg font-bold text-foreground">
                   {locale === "zh-cn" ? "精选推荐解读" : "Editor's Deep Dive"}
                 </h2>
                 <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold">
-                  AI 自动生成
+                  AI 深度打字机撰写
                 </span>
               </div>
-            </div>
 
+              <Link
+                href={`/article/generate?appId=${app.id}`}
+                className="text-xs px-3.5 py-1.5 rounded-full bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/60 font-semibold hover:bg-rose-100 dark:hover:bg-rose-900/40 transition flex items-center gap-1.5 shadow-2xs"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>为该应用撰写文章</span>
+              </Link>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Prefer real AI-generated articles if present, otherwise related topics */}
               {app.articles && app.articles.length > 0
