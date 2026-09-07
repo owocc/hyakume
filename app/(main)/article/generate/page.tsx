@@ -96,7 +96,6 @@ function TypewriterGeneratorContent() {
   const [loadedApp, setLoadedApp] = useState<AppItem | null>(null);
   const [errorMsg, setErrorMsg] = useState<string>("");
   const [isMuted, setIsMuted] = useState<boolean>(false);
-  const [activeKeyIndex, setActiveKeyIndex] = useState<number | null>(null);
 
   const audioCtxRef = useRef<AudioContext | null>(null);
   const paperScrollRef = useRef<HTMLDivElement>(null);
@@ -196,8 +195,6 @@ function TypewriterGeneratorContent() {
   // Handle typing key animations
   const triggerKeyStroke = () => {
     playTypewriterClick(audioCtxRef.current, isMuted);
-    setActiveKeyIndex(Math.floor(Math.random() * 11));
-    setTimeout(() => setActiveKeyIndex(null), 80);
   };
 
   const startTypewriterProcess = async () => {
@@ -436,28 +433,46 @@ function TypewriterGeneratorContent() {
           - Bottom: Vintage olive sage-green mechanical typewriter body
           ========================================================================
         */}
-        <div className="w-full max-w-lg mt-8 flex flex-col items-center relative select-none">
-          {/* 
-            THE MANUSCRIPT PAPER SHEET (Curved top edge, cream color #f6f2ea)
-            Emerging from the platen roller cylinder
-          */}
+        <div className="w-full max-w-[410px] mt-8 relative select-none">
+          
+          {/* THE MECHANICAL TYPEWRITER VIDEO (Now dictates layout) */}
+          <div className="w-full relative drop-shadow-2xl">
+            <video
+              src="/typewriter.webm"
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="w-full h-auto object-contain pointer-events-none"
+            />
+          </div>
+
+          {/* Text Overlay (Transparent, absolutely positioned over the video's white paper) */}
+          <style>{`
+            @keyframes typeWriterFollow {
+              0% { transform: translateX(0); }
+              35% { transform: translateX(-3.8%); }
+              65% { transform: translateX(-3.8%); }
+              100% { transform: translateX(0); }
+            }
+          `}</style>
           <div
             ref={paperScrollRef}
-            className="w-[88%] sm:w-[92%] h-[420px] sm:h-[480px] bg-[#faf7ee] text-[#2c2b29] rounded-t-3xl shadow-lg border-x border-t border-[#e2dccf] p-6 sm:p-8 flex flex-col justify-between overflow-y-auto relative transition-all duration-300 font-mono text-xs"
+            className="absolute top-[2%] left-[25%] w-[60%] h-[54%] text-[#2c2b29] p-3 sm:p-5 flex flex-col justify-between overflow-y-auto z-10 font-serif text-xs"
             style={{
-              boxShadow: "0 10px 30px -5px rgba(0, 0, 0, 0.15), inset 0 0 40px rgba(0, 0, 0, 0.02)",
+              animation: "typeWriterFollow 20.084s infinite linear"
             }}
           >
             {/* Header Line on the Paper (Exact replication from Image #1) */}
             <div>
-              <div className="flex items-center justify-between text-[11px] font-mono tracking-wider text-[#636159] pb-2">
+              <div className="flex items-center justify-between text-[11px] font-serif tracking-wider text-[#636159] pb-2">
                 <span>omont.2026</span>
                 <span>ai editorial office</span>
               </div>
               <div className="w-full h-px bg-[#4a4945] mb-5" />
 
               {/* Typed Content Area */}
-              <div className="space-y-3 font-mono leading-relaxed min-h-[220px]">
+              <div className="space-y-3 font-serif leading-relaxed min-h-[220px]">
                 {typedLogs.length === 0 ? (
                   <div className="pt-8 text-center space-y-3 opacity-60">
                     <p className="text-xs tracking-wide">
@@ -495,79 +510,15 @@ function TypewriterGeneratorContent() {
 
             {/* Bottom Footer Typography on the Paper (Exact replication from Image #1) */}
             <div className="pt-4 mt-auto">
-              <div className="text-[11px] font-mono text-[#54524c]">boring office</div>
+              <div className="text-[11px] font-serif text-[#54524c]">boring office</div>
               <div className="w-full border-b border-dotted border-[#827f76] my-1" />
-              <div className="text-[11px] font-mono text-[#6e6b63] tracking-wider flex items-center justify-between">
+              <div className="text-[11px] font-serif text-[#6e6b63] tracking-wider flex items-center justify-between">
                 <span>old memory of new time ....</span>
                 {progress > 0 && <span>[{progress}%]</span>}
               </div>
             </div>
           </div>
 
-          {/* 
-            THE MECHANICAL TYPEWRITER BODY AT THE BOTTOM (Exact replication from Image #1)
-            - Metallic platen roller with black rubber & chrome spring paper bail
-            - Vintage sage-green chassis with rounded curves
-            - Circular knurled knobs on left and right
-            - Fan arc of metallic typebar hammers
-            - Embossed "OMONT" badge
-            - Mechanical circular keycaps at the front
-          */}
-          <div className="w-full bg-[#b8c5a2] rounded-3xl p-4 sm:p-6 shadow-2xl border-t-2 border-[#cfdcba] relative flex flex-col items-center -mt-2 z-10">
-            {/* Left & Right Platen Roller Knobs */}
-            <div className="absolute -left-3.5 top-6 w-5 sm:w-6 h-12 bg-neutral-300 rounded-lg border border-neutral-400 shadow-md flex flex-col justify-around py-1">
-              <span className="w-full h-px bg-neutral-400" />
-              <span className="w-full h-px bg-neutral-400" />
-              <span className="w-full h-px bg-neutral-400" />
-            </div>
-            <div className="absolute -right-3.5 top-6 w-5 sm:w-6 h-12 bg-neutral-300 rounded-lg border border-neutral-400 shadow-md flex flex-col justify-around py-1">
-              <span className="w-full h-px bg-neutral-400" />
-              <span className="w-full h-px bg-neutral-400" />
-              <span className="w-full h-px bg-neutral-400" />
-            </div>
-
-            {/* Platen Carriage Bar with Silver Clips */}
-            <div className="w-full h-4 bg-neutral-800 rounded-md border-t border-neutral-600 flex items-center justify-between px-8 mb-3 shadow-inner">
-              <span className="w-3 h-2 bg-neutral-400 rounded-xs" />
-              <span className="w-16 h-1 bg-neutral-500 rounded-full" />
-              <span className="w-3 h-2 bg-neutral-400 rounded-xs" />
-            </div>
-
-            {/* Center Fan of Mechanical Typebar Hammers */}
-            <div className="w-48 sm:w-64 h-10 bg-neutral-900/40 rounded-t-full border-t border-neutral-700/50 flex items-center justify-center relative overflow-hidden my-1">
-              {/* Radial Typebars */}
-              <div className="absolute inset-0 flex justify-center items-end opacity-40">
-                {[-45, -30, -15, 0, 15, 30, 45].map((deg, i) => (
-                  <div
-                    key={i}
-                    className="w-0.5 h-9 bg-neutral-300 origin-bottom"
-                    style={{ transform: `rotate(${deg}deg)` }}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Embossed Brand Name Badge (OMONT) */}
-            <div className="my-2 text-center">
-              <span className="text-xs sm:text-sm font-serif font-black tracking-[0.25em] text-[#73825e] uppercase drop-shadow-xs">
-                OMONT
-              </span>
-            </div>
-
-            {/* Row of Round Mechanical Keys (matching Image #1) */}
-            <div className="flex items-center justify-center gap-1.5 sm:gap-2.5 pt-2 pb-1">
-              {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((keyIdx) => (
-                <div
-                  key={keyIdx}
-                  className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-[#f4efe4] border-2 border-neutral-400 shadow-sm flex items-center justify-center transition-all ${
-                    activeKeyIndex === keyIdx ? "scale-90 translate-y-1 bg-neutral-300" : ""
-                  }`}
-                >
-                  <span className="w-2.5 h-2.5 rounded-full bg-neutral-300/60" />
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
 
         {/* 
@@ -576,7 +527,7 @@ function TypewriterGeneratorContent() {
           ========================================================================
         */}
         {createdArticle && (
-          <div className="w-full max-w-lg mt-8 p-5 sm:p-6 rounded-3xl bg-white dark:bg-card border border-emerald-500/30 shadow-xl space-y-4 animate-in slide-in-from-bottom-3 duration-300">
+          <div className="w-full max-w-[410px] mt-8 p-5 sm:p-6 rounded-3xl bg-white dark:bg-card border border-emerald-500/30 shadow-xl space-y-4 animate-in slide-in-from-bottom-3 duration-300">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
