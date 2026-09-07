@@ -518,10 +518,70 @@ function TypewriterGeneratorContent() {
           {/* Text Overlay (Transparent, absolutely positioned over the video's white paper) */}
           <style>{`
             @keyframes typeWriterFollow {
-              0% { transform: translateX(0); }
-              35% { transform: translateX(-3.8%); }
-              65% { transform: translateX(-3.8%); }
-              100% { transform: translateX(0); }
+              /* Forward typing & mechanical impact jitters (0s ~ 7s) */
+              0% { transform: translate(0, 0); }
+              3% { transform: translate(-0.3%, -0.6px); }
+              4% { transform: translate(-0.1%, 0.4px); }
+              5% { transform: translate(-0.4%, 0); }
+              7% { transform: translate(-0.9%, -0.7px); }
+              8% { transform: translate(-0.6%, 0.5px); }
+              9% { transform: translate(-0.8%, 0); }
+              11% { transform: translate(-1.3%, -0.6px); }
+              12% { transform: translate(-1.0%, 0.4px); }
+              13% { transform: translate(-1.2%, 0); }
+              15% { transform: translate(-1.7%, -0.7px); }
+              16% { transform: translate(-1.4%, 0.5px); }
+              17% { transform: translate(-1.6%, 0); }
+              19% { transform: translate(-2.1%, -0.6px); }
+              20% { transform: translate(-1.8%, 0.4px); }
+              21% { transform: translate(-2.0%, 0); }
+              23% { transform: translate(-2.5%, -0.7px); }
+              24% { transform: translate(-2.2%, 0.5px); }
+              25% { transform: translate(-2.4%, 0); }
+              27% { transform: translate(-2.9%, -0.6px); }
+              28% { transform: translate(-2.6%, 0.4px); }
+              29% { transform: translate(-2.8%, 0); }
+              31% { transform: translate(-3.4%, -0.7px); }
+              32% { transform: translate(-3.0%, 0.5px); }
+              33% { transform: translate(-3.3%, 0); }
+              35% { transform: translate(-4.1%, -0.8px); }
+              36% { transform: translate(-3.6%, 0.4px); }
+              37% { transform: translate(-3.8%, 0); }
+
+              /* Turn-around phase with ambient roller micro-vibration (7s ~ 13s) */
+              42% { transform: translate(-3.8%, 0.3px); }
+              48% { transform: translate(-3.8%, -0.3px); }
+              50% { transform: translate(-3.8%, 0); }
+              54% { transform: translate(-3.8%, 0.2px); }
+              60% { transform: translate(-3.8%, -0.2px); }
+              63% { transform: translate(-3.8%, 0); }
+
+              /* Reverse rewind phase with reverse mechanical impact jitters (13s ~ 20s) */
+              65% { transform: translate(-3.4%, 0.6px); }
+              66% { transform: translate(-3.6%, -0.4px); }
+              67% { transform: translate(-3.3%, 0); }
+              69% { transform: translate(-2.9%, 0.6px); }
+              70% { transform: translate(-3.1%, -0.4px); }
+              71% { transform: translate(-2.8%, 0); }
+              73% { transform: translate(-2.4%, 0.6px); }
+              74% { transform: translate(-2.6%, -0.4px); }
+              75% { transform: translate(-2.3%, 0); }
+              77% { transform: translate(-1.9%, 0.6px); }
+              78% { transform: translate(-2.1%, -0.4px); }
+              79% { transform: translate(-1.8%, 0); }
+              81% { transform: translate(-1.4%, 0.6px); }
+              82% { transform: translate(-1.6%, -0.4px); }
+              83% { transform: translate(-1.3%, 0); }
+              85% { transform: translate(-0.9%, 0.6px); }
+              86% { transform: translate(-1.1%, -0.4px); }
+              87% { transform: translate(-0.8%, 0); }
+              89% { transform: translate(-0.5%, 0.6px); }
+              90% { transform: translate(-0.7%, -0.4px); }
+              91% { transform: translate(-0.4%, 0); }
+              94% { transform: translate(-0.1%, 0.5px); }
+              96% { transform: translate(-0.3%, -0.3px); }
+              98% { transform: translate(0, 0.2px); }
+              100% { transform: translate(0, 0); }
             }
           `}</style>
           <div
