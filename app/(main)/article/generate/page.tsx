@@ -484,8 +484,8 @@ function TypewriterGeneratorContent() {
           title={isZoomed ? "点击复位缩小" : "点击放大打字机"}
           className={`w-full max-w-[410px] mt-6 sm:mt-8 relative select-none transition-all duration-300 ease-out origin-center ${
             isZoomed
-              ? "scale-115 sm:scale-135 md:scale-145 z-30 cursor-zoom-out drop-shadow-2xl"
-              : "scale-100 z-10 cursor-zoom-in hover:scale-[1.02]"
+              ? "scale-115 sm:scale-135 md:scale-145 translate-y-[20%] z-30 cursor-zoom-out drop-shadow-2xl"
+              : "scale-100 translate-y-0 z-10 cursor-zoom-in hover:scale-[1.02]"
           }`}
         >
           {/* Quick Zoom Toggle Badge */}
