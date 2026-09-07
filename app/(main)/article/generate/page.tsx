@@ -518,69 +518,86 @@ function TypewriterGeneratorContent() {
           {/* Text Overlay (Transparent, absolutely positioned over the video's white paper) */}
           <style>{`
             @keyframes typeWriterFollow {
-              /* Forward typing & mechanical impact jitters (0s ~ 7s) */
+              /* 0s: start at origin */
               0% { transform: translate(0, 0); }
-              3% { transform: translate(-0.3%, -0.6px); }
-              4% { transform: translate(-0.1%, 0.4px); }
-              5% { transform: translate(-0.4%, 0); }
-              7% { transform: translate(-0.9%, -0.7px); }
-              8% { transform: translate(-0.6%, 0.5px); }
-              9% { transform: translate(-0.8%, 0); }
-              11% { transform: translate(-1.3%, -0.6px); }
-              12% { transform: translate(-1.0%, 0.4px); }
-              13% { transform: translate(-1.2%, 0); }
-              15% { transform: translate(-1.7%, -0.7px); }
-              16% { transform: translate(-1.4%, 0.5px); }
-              17% { transform: translate(-1.6%, 0); }
-              19% { transform: translate(-2.1%, -0.6px); }
-              20% { transform: translate(-1.8%, 0.4px); }
-              21% { transform: translate(-2.0%, 0); }
-              23% { transform: translate(-2.5%, -0.7px); }
-              24% { transform: translate(-2.2%, 0.5px); }
-              25% { transform: translate(-2.4%, 0); }
-              27% { transform: translate(-2.9%, -0.6px); }
-              28% { transform: translate(-2.6%, 0.4px); }
-              29% { transform: translate(-2.8%, 0); }
-              31% { transform: translate(-3.4%, -0.7px); }
-              32% { transform: translate(-3.0%, 0.5px); }
-              33% { transform: translate(-3.3%, 0); }
-              35% { transform: translate(-4.1%, -0.8px); }
-              36% { transform: translate(-3.6%, 0.4px); }
-              37% { transform: translate(-3.8%, 0); }
 
-              /* Turn-around phase with ambient roller micro-vibration (7s ~ 13s) */
-              42% { transform: translate(-3.8%, 0.3px); }
-              48% { transform: translate(-3.8%, -0.3px); }
-              50% { transform: translate(-3.8%, 0); }
-              54% { transform: translate(-3.8%, 0.2px); }
-              60% { transform: translate(-3.8%, -0.2px); }
-              63% { transform: translate(-3.8%, 0); }
+              /* Strike 1 (~0.7s): Jitter strike and discrete step */
+              3.5% { transform: translate(-0.4%, -0.6px); }
+              4.0% { transform: translate(-0.4%, 0); }
 
-              /* Reverse rewind phase with reverse mechanical impact jitters (13s ~ 20s) */
-              65% { transform: translate(-3.4%, 0.6px); }
-              66% { transform: translate(-3.6%, -0.4px); }
-              67% { transform: translate(-3.3%, 0); }
-              69% { transform: translate(-2.9%, 0.6px); }
-              70% { transform: translate(-3.1%, -0.4px); }
-              71% { transform: translate(-2.8%, 0); }
-              73% { transform: translate(-2.4%, 0.6px); }
-              74% { transform: translate(-2.6%, -0.4px); }
-              75% { transform: translate(-2.3%, 0); }
-              77% { transform: translate(-1.9%, 0.6px); }
-              78% { transform: translate(-2.1%, -0.4px); }
-              79% { transform: translate(-1.8%, 0); }
-              81% { transform: translate(-1.4%, 0.6px); }
-              82% { transform: translate(-1.6%, -0.4px); }
-              83% { transform: translate(-1.3%, 0); }
-              85% { transform: translate(-0.9%, 0.6px); }
-              86% { transform: translate(-1.1%, -0.4px); }
-              87% { transform: translate(-0.8%, 0); }
-              89% { transform: translate(-0.5%, 0.6px); }
-              90% { transform: translate(-0.7%, -0.4px); }
-              91% { transform: translate(-0.4%, 0); }
-              94% { transform: translate(-0.1%, 0.5px); }
-              96% { transform: translate(-0.3%, -0.3px); }
-              98% { transform: translate(0, 0.2px); }
+              /* Strike 2 (~1.4s) */
+              7.0% { transform: translate(-0.8%, -0.7px); }
+              7.5% { transform: translate(-0.8%, 0); }
+
+              /* Strike 3 (~2.1s) */
+              10.5% { transform: translate(-1.2%, -0.6px); }
+              11.0% { transform: translate(-1.2%, 0); }
+
+              /* Strike 4 (~2.8s) */
+              14.0% { transform: translate(-1.6%, -0.7px); }
+              14.5% { transform: translate(-1.6%, 0); }
+
+              /* Strike 5 (~3.5s) */
+              17.5% { transform: translate(-2.0%, -0.6px); }
+              18.0% { transform: translate(-2.0%, 0); }
+
+              /* Strike 6 (~4.2s) */
+              21.0% { transform: translate(-2.4%, -0.7px); }
+              21.5% { transform: translate(-2.4%, 0); }
+
+              /* Strike 7 (~4.9s) */
+              24.5% { transform: translate(-2.8%, -0.6px); }
+              25.0% { transform: translate(-2.8%, 0); }
+
+              /* Strike 8 (~5.6s) */
+              28.0% { transform: translate(-3.2%, -0.7px); }
+              28.5% { transform: translate(-3.2%, 0); }
+
+              /* Strike 9 (~6.3s) */
+              31.5% { transform: translate(-3.5%, -0.6px); }
+              32.0% { transform: translate(-3.5%, 0); }
+
+              /* Strike 10 (~7.0s - final position reached) */
+              35.0% { transform: translate(-3.8%, -0.8px); }
+              35.5% { transform: translate(-3.8%, 0); }
+
+              /* Turn-around phase (7s ~ 13s): Holds firmly at -3.8% with discrete micro-shake */
+              45.0% { transform: translate(-3.8%, 0.3px); }
+              45.5% { transform: translate(-3.8%, 0); }
+              55.0% { transform: translate(-3.8%, -0.3px); }
+              55.5% { transform: translate(-3.8%, 0); }
+
+              /* Reverse rewind ratchet steps (13s ~ 20s) */
+              65.0% { transform: translate(-3.5%, 0.6px); }
+              65.5% { transform: translate(-3.5%, 0); }
+
+              68.5% { transform: translate(-3.2%, 0.6px); }
+              69.0% { transform: translate(-3.2%, 0); }
+
+              72.0% { transform: translate(-2.8%, 0.6px); }
+              72.5% { transform: translate(-2.8%, 0); }
+
+              75.5% { transform: translate(-2.4%, 0.6px); }
+              76.0% { transform: translate(-2.4%, 0); }
+
+              79.0% { transform: translate(-2.0%, 0.6px); }
+              79.5% { transform: translate(-2.0%, 0); }
+
+              82.5% { transform: translate(-1.6%, 0.6px); }
+              83.0% { transform: translate(-1.6%, 0); }
+
+              86.0% { transform: translate(-1.2%, 0.6px); }
+              86.5% { transform: translate(-1.2%, 0); }
+
+              89.5% { transform: translate(-0.8%, 0.6px); }
+              90.0% { transform: translate(-0.8%, 0); }
+
+              93.0% { transform: translate(-0.4%, 0.6px); }
+              93.5% { transform: translate(-0.4%, 0); }
+
+              96.5% { transform: translate(0, 0.4px); }
+              97.0% { transform: translate(0, 0); }
+
               100% { transform: translate(0, 0); }
             }
           `}</style>
@@ -588,7 +605,7 @@ function TypewriterGeneratorContent() {
             ref={paperScrollRef}
             className="absolute top-[2%] left-[25%] w-[60%] h-[54%] text-[#2c2b29] p-3 sm:p-5 flex flex-col justify-between overflow-y-auto z-10 font-serif text-xs"
             style={{
-              animation: "typeWriterFollow 20.084s infinite linear"
+              animation: "typeWriterFollow 20.084s infinite step-end"
             }}
           >
             {/* Header Line on the Paper (Exact replication from Image #1) */}
