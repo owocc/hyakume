@@ -103,7 +103,7 @@ function TypewriterGeneratorContent() {
 
   const audioCtxRef = useRef<AudioContext | null>(null);
   const paperScrollRef = useRef<HTMLDivElement>(null);
-
+  const currentRunId = useRef<number>(0);
   // Initialize Web Audio Context
   useEffect(() => {
     try {
@@ -223,6 +223,8 @@ function TypewriterGeneratorContent() {
       window.history.replaceState(null, "", newUrl);
     }
 
+    const runId = ++currentRunId.current;
+
     setIsGenerating(true);
     setProgress(5);
     setTypedLogs([]);
@@ -235,23 +237,44 @@ function TypewriterGeneratorContent() {
       return promise;
     };
 
-    try {
-      await delay(600);
-      setProgress(20);
-      setTypedLogs((prev) => [
-        ...prev,
-        `>> [TARGET_CALIBRATED] Target profile: "${clean}"`,
-        `>> [PERSPECTIVE_SELECTED] Editorial angle: "${selectedTag}"`,
-      ]);
+    // True mechanical typewriter typing function (character-by-character with audible clicks)
+    const typeLine = async (line: string, charSpeed = 20) => {
+      if (currentRunId.current !== runId) return;
+      setTypedLogs((prev) => [...prev, ""]);
 
-      await delay(800);
-      triggerKeyStroke();
-      setProgress(40);
-      setTypedLogs((prev) => [
-        ...prev,
-        `>> [ANALYZING_ARCHITECTURE] Parsing feature set & key attributes...`,
-        `>> [INDEPENDENT_STORYTELLING] Inking tailored narrative sections...`,
-      ]);
+      for (let i = 0; i < line.length; i++) {
+        if (currentRunId.current !== runId) return;
+        const char = line[i];
+        setTypedLogs((prev) => {
+          const next = [...prev];
+          next[next.length - 1] = (next[next.length - 1] || "") + char;
+          return next;
+        });
+
+        // Realistic mechanical hammer strike clicks
+        if (char !== " " && (i % 2 === 0 || char === "." || char === ":")) {
+          playTypewriterClick(audioCtxRef.current, isMuted);
+        }
+
+        // Micro-jitter in typing cadence to feel organic and mechanical
+        const jitter = Math.random() * 10 - 4;
+        await delay(Math.max(8, charSpeed + jitter));
+      }
+
+      // Short pause as carriage resets/feeds line
+      await delay(90);
+    };
+
+    try {
+      await delay(250);
+      setProgress(15);
+      await typeLine(`>> [TARGET_CALIBRATED] Profile: "${clean}"`, 16);
+      await typeLine(`>> [PERSPECTIVE_SELECTED] Angle: "${selectedTag}"`, 16);
+
+      setProgress(35);
+      await typeLine(`>> [ANALYZING_ARCHITECTURE] Parsing feature set & key attributes...`, 16);
+      await typeLine(`>> [INDEPENDENT_STORYTELLING] Inking tailored narrative sections...`, 16);
+
       // Call dedicated Article Generation API
       const res = await fetch("/api/articles/generate", {
         method: "POST",
@@ -287,32 +310,19 @@ function TypewriterGeneratorContent() {
         throw new Error("生成服务返回异常");
       }
 
-      await delay(600);
-      triggerKeyStroke();
-      setProgress(70);
-      setTypedLogs((prev) => [
-        ...prev,
-        `>> [HEADLINE_INKED] "${data.article.title}"`,
-        `>> [SUMMARY_COMPOSED] "${data.article.summary?.slice(0, 70)}..."`,
-      ]);
+      setProgress(65);
+      await typeLine(`>> [HEADLINE_INKED] "${data.article.title}"`, 16);
+      await typeLine(`>> [SUMMARY_COMPOSED] "${data.article.summary?.slice(0, 65)}..."`, 16);
 
-      await delay(600);
-      triggerKeyStroke();
-      setProgress(90);
-      setTypedLogs((prev) => [
-        ...prev,
-        `>> [VERIFYING_LINKS] Validated ${(data.article.links?.length || 0)} official resources.`,
-        `>> [AUTHOR_STAMPED] Inked attribution to @${session.user.name || "You"}.`,
-      ]);
+      setProgress(85);
+      await typeLine(`>> [VERIFYING_LINKS] Validated ${(data.article.links?.length || 0)} official resources.`, 16);
+      await typeLine(`>> [AUTHOR_STAMPED] Inked attribution to @${session.user.name || "You"}.`, 16);
 
-      await delay(500);
-      playTypewriterBell(audioCtxRef.current, isMuted);
       setProgress(100);
-      setTypedLogs((prev) => [
-        ...prev,
-        `----------------------------------------------------`,
-        `[MANUSCRIPT_FINALIZED] 3-Minute Editorial Piece Ready.`,
-      ]);
+      playTypewriterBell(audioCtxRef.current, isMuted);
+      await typeLine(`----------------------------------------------------`, 8);
+      await typeLine(`[MANUSCRIPT_FINALIZED] Editorial Piece Ready.`, 16);
+
       setCreatedArticle(data.article);
       if (data.app) setLoadedApp(data.app);
     } catch (err) {
@@ -520,7 +530,7 @@ function TypewriterGeneratorContent() {
                   typedLogs.map((log, idx) => (
                     <div
                       key={idx}
-                      className={`animate-in fade-in duration-150 ${
+                      className={`${
                         log.startsWith(">> [HEADLINE")
                           ? "font-bold text-sm text-[#11100e] border-l-2 border-[#788863] pl-2 py-0.5 my-2"
                           : log.startsWith(">> [SUMMARY")
@@ -530,18 +540,21 @@ function TypewriterGeneratorContent() {
                           : "text-[#4a473f]"
                       }`}
                     >
-                      {log}
+                      <span>{log}</span>
+                      {/* Dynamic typewriter ribbon cursor pinned to active character */}
+                      {isGenerating && idx === typedLogs.length - 1 && (
+                        <span className="inline-block w-1.5 h-3 bg-[#2c2b29] animate-pulse ml-0.5 align-middle shadow-xs" />
+                      )}
                     </div>
                   ))
                 )}
 
-                {/* Blinking Mechanical Typewriter Cursor */}
-                {isGenerating && (
-                  <span className="inline-block w-2 h-3.5 bg-[#2c2b29] animate-pulse ml-0.5 align-middle" />
+                {/* Initial blinking cursor before first line starts */}
+                {isGenerating && typedLogs.length === 0 && (
+                  <span className="inline-block w-1.5 h-3 bg-[#2c2b29] animate-pulse ml-0.5 align-middle" />
                 )}
               </div>
             </div>
-
             {/* Bottom Footer Typography on the Paper (Exact replication from Image #1) */}
             <div className="pt-4 mt-auto">
               <div className="text-[11px] font-serif text-[#54524c]">boring office</div>
