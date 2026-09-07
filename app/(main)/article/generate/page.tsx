@@ -12,9 +12,11 @@ import {
   Volume2,
   VolumeX,
   BookOpen,
-  ArrowLeft,
   CheckCircle2,
   Loader2,
+  ChevronDown,
+  ChevronUp,
+  SlidersHorizontal,
 } from "lucide-react";
 import type { ArticleItem, AppItem, PipelineTaskItem } from "@/lib/types";
 
@@ -96,6 +98,7 @@ function TypewriterGeneratorContent() {
   const [loadedApp, setLoadedApp] = useState<AppItem | null>(null);
   const [errorMsg, setErrorMsg] = useState<string>("");
   const [isMuted, setIsMuted] = useState<boolean>(false);
+  const [isConfigOpen, setIsConfigOpen] = useState<boolean>(false);
 
   const audioCtxRef = useRef<AudioContext | null>(null);
   const paperScrollRef = useRef<HTMLDivElement>(null);
@@ -324,105 +327,133 @@ function TypewriterGeneratorContent() {
       <SiteHeader />
 
       <main className="max-w-5xl mx-auto w-full px-4 sm:px-6 pt-24 pb-16 flex flex-col items-center flex-1">
-        {/* Top Control Bar */}
-        <div className="w-full flex items-center justify-between pb-6 border-b border-neutral-300 dark:border-neutral-800/80">
-          <Link
-            href="/dashboard"
-            className="inline-flex items-center gap-1.5 text-xs font-mono font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>RETURN TO DASHBOARD</span>
-          </Link>
+        {/* Collapsible Perspective & Target Selection Bar */}
+        <div className="w-full max-w-xl flex flex-col items-center">
+          {!isConfigOpen ? (
+            <div className="inline-flex items-center gap-2 p-1.5 pl-3.5 rounded-full bg-white/80 dark:bg-card/80 backdrop-blur-md border border-neutral-300/80 dark:border-neutral-800 shadow-xs hover:border-[#788863]/50 transition-all">
+              {/* Clickable info trigger */}
+              <button
+                type="button"
+                onClick={() => setIsConfigOpen(true)}
+                className="inline-flex items-center gap-2 text-xs font-mono text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition cursor-pointer pr-1"
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5 text-[#788863]" />
+                <span className="truncate max-w-[200px] sm:max-w-[280px]">
+                  {targetInput ? (
+                    <>
+                      <span className="text-foreground font-semibold">{targetInput}</span>
+                      <span className="text-muted-foreground ml-1.5 font-normal">({selectedTag})</span>
+                    </>
+                  ) : (
+                    <span>设定生成目标 (Editorial Setup)</span>
+                  )}
+                </span>
+                <ChevronDown className="w-3.5 h-3.5 text-neutral-400" />
+              </button>
 
-          {/* Sound Mute Toggle */}
-          <button
-            type="button"
-            onClick={() => setIsMuted(!isMuted)}
-            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/70 dark:bg-card/70 border border-neutral-300 dark:border-neutral-700 text-xs font-mono font-medium text-neutral-700 dark:text-neutral-300 hover:bg-white dark:hover:bg-card transition shadow-2xs cursor-pointer"
-            title={isMuted ? "开启打字机机械音效" : "静音打字机音效"}
-          >
-            {isMuted ? (
-              <>
-                <VolumeX className="w-3.5 h-3.5 text-neutral-400" />
-                <span>MUTE: ON</span>
-              </>
-            ) : (
-              <>
-                <Volume2 className="w-3.5 h-3.5 text-[#788863]" />
-                <span>CLACK SOUND: ON</span>
-              </>
-            )}
-          </button>
-        </div>
+              {/* Compact Action Button */}
+              <button
+                type="button"
+                onClick={targetInput ? startTypewriterProcess : () => setIsConfigOpen(true)}
+                disabled={isGenerating}
+                className="px-3.5 py-1 rounded-full bg-[#788863] hover:bg-[#687754] active:scale-95 disabled:opacity-50 text-white text-[11px] font-mono font-bold shadow-2xs transition cursor-pointer flex items-center gap-1 shrink-0"
+              >
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    <span>TYPING...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-3 h-3" />
+                    <span>{targetInput ? "START" : "SET"}</span>
+                  </>
+                )}
+              </button>
+            </div>
+          ) : (
+            /* Expanded Configuration Card */
+            <div className="w-full p-4 sm:p-5 rounded-2xl bg-white/90 dark:bg-card/90 backdrop-blur-md border border-neutral-300/80 dark:border-neutral-800 shadow-md space-y-3 animate-in fade-in zoom-in-98 duration-150">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono font-bold text-neutral-700 dark:text-neutral-300 uppercase flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-[#788863]" />
+                  <span>EDITORIAL MANUSCRIPT DESK (独立文章生成台)</span>
+                </span>
+                <div className="flex items-center gap-2">
+                  {loadedApp && (
+                    <span className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" />
+                      <span>已绑定: {loadedApp.name}</span>
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setIsConfigOpen(false)}
+                    className="p-1 rounded-lg text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition cursor-pointer"
+                    title="收起配置"
+                  >
+                    <ChevronUp className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
 
-        {/* Perspective & Target Selection Bar */}
-        <div className="w-full max-w-2xl mt-6 p-4 rounded-2xl bg-white/80 dark:bg-card/80 border border-neutral-300/80 dark:border-neutral-800 shadow-sm space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-mono font-bold text-neutral-700 dark:text-neutral-300 uppercase flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-[#788863]" />
-              <span>EDITORIAL MANUSCRIPT DESK (独立文章生成台)</span>
-            </span>
-            {loadedApp && (
-              <span className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
-                <CheckCircle2 className="w-3 h-3" />
-                <span>已绑定: {loadedApp.name}</span>
-              </span>
-            )}
-          </div>
+              <div className="flex flex-col sm:flex-row items-center gap-2">
+                <input
+                  type="text"
+                  value={targetInput}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setTargetInput(val);
+                    if (errorMsg) setErrorMsg("");
+                    if (loadedApp && loadedApp.url !== val && loadedApp.name !== val && loadedApp.id !== val) {
+                      setLoadedApp(null);
+                    }
+                  }}
+                  placeholder="输入任意目标网址或应用名称 (如: https://linear.app)"
+                  disabled={isGenerating}
+                  className="flex-1 w-full px-3.5 py-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-xs text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#788863]/30"
+                />
 
-          <div className="flex flex-col sm:flex-row items-center gap-2">
-            <input
-              type="text"
-              value={targetInput}
-              onChange={(e) => {
-                const val = e.target.value;
-                setTargetInput(val);
-                if (errorMsg) setErrorMsg("");
-                if (loadedApp && loadedApp.url !== val && loadedApp.name !== val && loadedApp.id !== val) {
-                  setLoadedApp(null);
-                }
-              }}
-              placeholder="输入任意目标网址或应用名称 (如: https://github.com/owocc/hyakume, https://linear.app)"
-              disabled={isGenerating}
-              className="flex-1 w-full px-4 py-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-xs text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#788863]/30"
-            />
+                <select
+                  value={selectedTag}
+                  onChange={(e) => setSelectedTag(e.target.value)}
+                  disabled={isGenerating}
+                  className="w-full sm:w-auto px-3 py-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-xs font-medium text-foreground cursor-pointer focus:outline-none"
+                >
+                  {PERSPECTIVES.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.label}
+                    </option>
+                  ))}
+                </select>
 
-            {/* Tag / Perspective Selector */}
-            <select
-              value={selectedTag}
-              onChange={(e) => setSelectedTag(e.target.value)}
-              disabled={isGenerating}
-              className="w-full sm:w-auto px-3 py-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-xs font-medium text-foreground cursor-pointer focus:outline-none"
-            >
-              {PERSPECTIVES.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.label}
-                </option>
-              ))}
-            </select>
+                <button
+                  type="button"
+                  onClick={() => {
+                    startTypewriterProcess();
+                    setIsConfigOpen(false);
+                  }}
+                  disabled={isGenerating || !targetInput.trim()}
+                  className="w-full sm:w-auto px-4 py-2 rounded-xl bg-[#788863] hover:bg-[#687754] active:scale-95 disabled:opacity-50 text-white text-xs font-mono font-bold shadow-xs transition cursor-pointer flex items-center justify-center gap-1.5 shrink-0"
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>TYPING...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>START TYPEWRITER</span>
+                    </>
+                  )}
+                </button>
+              </div>
 
-            <button
-              type="button"
-              onClick={startTypewriterProcess}
-              disabled={isGenerating || !targetInput.trim()}
-              className="w-full sm:w-auto px-5 py-2 rounded-xl bg-[#788863] hover:bg-[#687754] active:scale-95 disabled:opacity-50 text-white text-xs font-mono font-bold shadow-xs transition cursor-pointer flex items-center justify-center gap-1.5 shrink-0"
-            >
-              {isGenerating ? (
-                <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  <span>TYPING...</span>
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>START TYPEWRITER</span>
-                </>
+              {errorMsg && (
+                <p className="text-xs text-red-500 font-medium">{errorMsg}</p>
               )}
-            </button>
-          </div>
-
-          {errorMsg && (
-            <p className="text-xs text-red-500 font-medium">{errorMsg}</p>
+            </div>
           )}
         </div>
 
@@ -579,6 +610,26 @@ function TypewriterGeneratorContent() {
           </div>
         )}
       </main>
+
+      {/* Floating Mechanical Sound Mute Toggle */}
+      <button
+        type="button"
+        onClick={() => setIsMuted(!isMuted)}
+        className="fixed bottom-6 right-6 z-40 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/80 dark:bg-card/80 backdrop-blur-md border border-neutral-300/80 dark:border-neutral-700/80 text-xs font-mono font-medium text-neutral-700 dark:text-neutral-300 hover:bg-white dark:hover:bg-card transition shadow-sm cursor-pointer active:scale-95"
+        title={isMuted ? "开启打字机机械音效" : "静音打字机音效"}
+      >
+        {isMuted ? (
+          <>
+            <VolumeX className="w-3.5 h-3.5 text-neutral-400" />
+            <span>MUTE: ON</span>
+          </>
+        ) : (
+          <>
+            <Volume2 className="w-3.5 h-3.5 text-[#788863]" />
+            <span>CLACK SOUND: ON</span>
+          </>
+        )}
+      </button>
     </div>
   );
 }
