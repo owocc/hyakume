@@ -18,6 +18,8 @@ import {
   ChevronDown,
   ChevronUp,
   SlidersHorizontal,
+  ZoomIn,
+  ZoomOut,
 } from "lucide-react";
 import type { ArticleItem, AppItem, PipelineTaskItem } from "@/lib/types";
 
@@ -100,7 +102,7 @@ function TypewriterGeneratorContent() {
   const [errorMsg, setErrorMsg] = useState<string>("");
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [isConfigOpen, setIsConfigOpen] = useState<boolean>(false);
-
+  const [isZoomed, setIsZoomed] = useState<boolean>(false);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const paperScrollRef = useRef<HTMLDivElement>(null);
   const currentRunId = useRef<number>(0);
@@ -477,9 +479,31 @@ function TypewriterGeneratorContent() {
           - Bottom: Vintage olive sage-green mechanical typewriter body
           ========================================================================
         */}
-        <div className="w-full max-w-[410px] mt-8 relative select-none">
-          
-          {/* THE MECHANICAL TYPEWRITER VIDEO (Now dictates layout) */}
+        <div
+          onClick={() => setIsZoomed((prev) => !prev)}
+          title={isZoomed ? "点击复位缩小" : "点击放大打字机"}
+          className={`w-full max-w-[410px] mt-6 sm:mt-8 relative select-none transition-all duration-300 ease-out origin-center ${
+            isZoomed
+              ? "scale-115 sm:scale-135 md:scale-145 z-30 cursor-zoom-out drop-shadow-2xl"
+              : "scale-100 z-10 cursor-zoom-in hover:scale-[1.02]"
+          }`}
+        >
+          {/* Quick Zoom Toggle Badge */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsZoomed(!isZoomed);
+            }}
+            className="absolute -top-2.5 -right-2.5 z-30 p-1.5 rounded-full bg-white/90 dark:bg-neutral-800/90 backdrop-blur-md border border-neutral-300/80 dark:border-neutral-700/80 text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white shadow-xs transition hover:scale-110 active:scale-95 cursor-pointer"
+            title={isZoomed ? "缩小复位" : "放大打字机"}
+          >
+            {isZoomed ? (
+              <ZoomOut className="w-3.5 h-3.5" />
+            ) : (
+              <ZoomIn className="w-3.5 h-3.5" />
+            )}
+          </button>
           <div className="w-full relative drop-shadow-2xl">
             <video
               src="/typewriter.webm"
