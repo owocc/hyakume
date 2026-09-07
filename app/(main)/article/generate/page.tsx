@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
 import { SiteHeader } from "@/components/site-header";
+import { Footer } from "@/components/footer";
 import {
   Sparkles,
   ArrowRight,
@@ -322,11 +323,13 @@ function TypewriterGeneratorContent() {
   };
 
   return (
-    <div className="w-full min-h-screen bg-[#edeae2] dark:bg-[#121310] text-neutral-900 dark:text-neutral-100 flex flex-col justify-between selection:bg-[#788863] selection:text-white transition-colors duration-200">
-      {/* Universal Floating Header */}
-      <SiteHeader />
+    <div className="w-full bg-[#edeae2] dark:bg-[#121310] text-neutral-900 dark:text-neutral-100 flex flex-col selection:bg-[#788863] selection:text-white transition-colors duration-200">
+      {/* 100dvh Main Typewriter Viewport Section */}
+      <div className="min-h-[100dvh] w-full flex flex-col justify-between relative flex-none">
+        {/* Universal Floating Header */}
+        <SiteHeader />
 
-      <main className="max-w-5xl mx-auto w-full px-4 sm:px-6 pt-24 pb-16 flex flex-col items-center flex-1">
+        <main className="max-w-5xl mx-auto w-full px-4 sm:px-6 pt-20 sm:pt-24 pb-8 sm:pb-12 flex flex-col items-center justify-center flex-1 my-auto">
         {/* Collapsible Perspective & Target Selection Bar */}
         <div className="w-full max-w-xl flex flex-col items-center">
           {!isConfigOpen ? (
@@ -610,6 +613,10 @@ function TypewriterGeneratorContent() {
           </div>
         )}
       </main>
+      </div>
+
+      {/* Shared Footer Section (Revealed upon scrolling down) */}
+      <Footer />
 
       {/* Floating Mechanical Sound Mute Toggle */}
       <button
