@@ -21,8 +21,8 @@ export async function GET(request: Request) {
     }
 
     const tasks = await getUserTasks(session.user.id);
-    const activeTasks = tasks.filter((t) => t.status === "processing");
-    const completedTasks = tasks.filter((t) => t.status !== "processing");
+    const activeTasks = tasks.filter((t) => t.status === "processing" || t.status === "awaiting_confirmation");
+    const completedTasks = tasks.filter((t) => t.status === "completed" || t.status === "failed");
     return Response.json({
       success: true,
       tasks,

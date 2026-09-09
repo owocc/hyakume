@@ -15,6 +15,13 @@
       "when": 1788641893456,
       "tag": "0001_little_maginty",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788932264855,
+      "tag": "0002_ingestion_drafts",
+      "breakpoints": true
     }
   ]
 }
