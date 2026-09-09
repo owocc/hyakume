@@ -314,8 +314,8 @@ pnpm run dev
 | 命令 | 说明 |
 | :--- | :--- |
 | `pnpm run dev` | 启动本地 Vinext 开发服务器（支持 RSC 热更新与快速构建） |
-| `pnpm run build` | 构建用于 Cloudflare Worker 生产环境的 Client 和 Server 产物 |
-| `pnpm run build:cloudflare` | 供 Cloudflare Workers Builds 使用：基线化、迁移数据库后构建产物 |
+| `pnpm run build` | Cloudflare 默认构建命令：基线化、迁移数据库后构建 Worker 产物 |
+| `pnpm run build:app` | 仅构建 Worker 产物，不执行数据库迁移，供本地检查和 GitHub Actions 使用 |
 | `pnpm run start` | 使用本地 Wrangler 模拟器启动已构建好的 Worker 产物 |
 | `pnpm run deploy` | 构建并将服务部署上线至 Cloudflare Workers 平台 |
 | `pnpm run db:generate` | 基于 `lib/db/schema.ts` 生成 SQL 迁移脚本文件 |
@@ -389,11 +389,11 @@ npx wrangler secret put GITHUB_CLIENT_SECRET
 使用 Cloudflare Workers Builds 部署时，在 Cloudflare Dashboard 的 **Workers & Pages → hyakume → Settings → Builds** 设置：
 
 1. 将生产触发分支限定为 `main`；若启用其他分支的预览部署，请为其配置独立数据库，避免预览构建修改生产数据库；
-2. 将 **Build command** 设为 `pnpm run build:cloudflare`；
+2. 保持默认的 **Build command** `pnpm run build`，或显式设置为该命令；
 3. 保持现有的 **Deploy command** 配置不变；
 4. 在 **Build variables and secrets** 添加 `DATABASE_URL`，其连接用户必须具备执行 DDL 的权限。
 
-`build:cloudflare` 固定按以下顺序执行：
+默认 `build` 命令固定按以下顺序执行：
 
 1. 识别旧版运行时自动建表的数据库，并记录已有 schema 对应的 migration 历史；
 2. 执行全部待运行的 Drizzle migration；

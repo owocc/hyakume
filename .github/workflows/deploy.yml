@@ -28,4 +28,4 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
       - run: pnpm run db:check
-      - run: pnpm run build
+      - run: pnpm run build:app
