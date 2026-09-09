@@ -277,21 +277,26 @@ CLOUDFLARE_API_TOKEN=""
 ```
 
 ### 4. 初始化数据库
-使用 Drizzle Kit 将数据库 Schema 推送至数据库或运行迁移：
+
+数据库结构只通过已提交的 Drizzle migration 变更。首次本地启动和每次更新代码前执行：
 
 ```bash
-# 方式一：直接根据 schema.ts 创建/更新数据库表结构（推荐开发期使用）
-pnpm run db:push
+# 若生产库由旧版运行时自动建表，先记录已存在的初始 schema；可重复执行
+pnpm run db:baseline
+pnpm run db:migrate
 
-# 方式二：生成并运行正规 migration 脚本
+# 在修改 lib/db/schema.ts 后生成新的 migration，并提交 drizzle/ 下的 SQL 和 meta 文件
 pnpm run db:generate
 pnpm run db:migrate
 
-# 启动可视化数据库管理面板 (Drizzle Studio)
-pnpm run db:studio
+# 校验 migration 历史与 schema 快照是否一致
+pnpm run db:check
+
+# 仅用于本地快速原型，不要用于生产环境
+pnpm run db:push
 ```
 
-> 💡 **提示**：系统内嵌了 `ensureTablesInitialized()` 自愈机制，即使首次运行时未手动执行迁移，系统也会在数据库启动时自动检测并建表。
+> `DATABASE_AUTO_INIT` 默认关闭，避免应用请求在运行时修改生产数据库结构。仅在修复旧的、尚未纳入 migration 管理的数据库时，才临时设为 `true`。
 
 ### 5. 启动本地开发服务
 ```bash
@@ -314,7 +319,9 @@ pnpm run dev
 | `pnpm run deploy` | 构建并将服务部署上线至 Cloudflare Workers 平台 |
 | `pnpm run db:generate` | 基于 `lib/db/schema.ts` 生成 SQL 迁移脚本文件 |
 | `pnpm run db:migrate` | 执行未运行的数据库迁移脚本 |
-| `pnpm run db:push` | 将当前 Schema 变更直接同步并推送到目标 PostgreSQL 数据库 |
+| `pnpm run db:baseline` | 为旧版运行时自动建表的数据库记录已有 schema 对应的 migration 历史 |
+| `pnpm run db:check` | 校验 migration 历史与 Drizzle schema 快照一致 |
+| `pnpm run db:push` | 将当前 Schema 变更直接同步并推送到目标 PostgreSQL 数据库（仅限本地原型） |
 | `pnpm run db:studio` | 打开本地 Web 版 Drizzle Studio，可视化查看与操作数据 |
 
 ---
@@ -376,13 +383,29 @@ npx wrangler secret put GITHUB_CLIENT_ID
 npx wrangler secret put GITHUB_CLIENT_SECRET
 ```
 
-### 4. 执行一键构建与部署
+### 4. 自动迁移并部署
+
+`.github/workflows/deploy.yml` 会在合并请求时校验 migration 历史并构建应用；每次推送到 `main` 时，按以下顺序自动执行：
+
+1. 检测旧版运行时自动建表的数据库，并记录已存在 schema 对应的 migration 历史；
+2. 执行全部待运行的 Drizzle migration；
+3. 仅在迁移成功后部署 Cloudflare Worker。
+
+部署任务为串行队列，避免两个版本同时迁移或后提交的版本先部署。首次启用前，在 GitHub 仓库的 **Settings → Secrets and variables → Actions** 添加：
+
+- `DATABASE_URL`：具备 DDL 权限的生产 PostgreSQL / Neon 连接串；
+- `CLOUDFLARE_API_TOKEN`：具备 Workers 部署权限的 API Token；
+- `CLOUDFLARE_ACCOUNT_ID`：Cloudflare 账户 ID。
+
+之后将变更合并到 `main` 即可完成迁移和部署。紧急手动部署仍可执行：
+
 ```bash
-# 构建并部署到 Cloudflare Workers
+pnpm run db:baseline
+pnpm run db:migrate
 pnpm run deploy
 ```
 
-部署完成后，控制台将输出你的线上访问域名（如 `https://hyakume.your-name.workers.dev`）。
+新增 migration 时应保持向后兼容：先添加可空字段或新表、部署使用新旧结构均可运行的代码，待旧版本下线后再移除旧字段。
 
 ---
 

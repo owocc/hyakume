@@ -42,6 +42,17 @@ export function getDatabaseUrl(): string | undefined {
   return root.__env__?.DATABASE_URL || root.env?.DATABASE_URL;
 }
 
+function isRuntimeSchemaInitializationEnabled(): boolean {
+  if (typeof process !== "undefined" && process.env?.DATABASE_AUTO_INIT === "true") {
+    return true;
+  }
+  const root = globalThis as {
+    __env__?: Record<string, string>;
+    env?: Record<string, string>;
+  };
+  return root.__env__?.DATABASE_AUTO_INIT === "true" || root.env?.DATABASE_AUTO_INIT === "true";
+}
+
 export function getPool(): pg.Pool | null {
   if (poolInstance) return poolInstance;
 
@@ -200,6 +211,7 @@ function rowToApp(row: schema.AppSelect | Record<string, unknown>): AppItem {
 }
 
 export async function ensureTablesInitialized(): Promise<void> {
+  if (!isRuntimeSchemaInitializationEnabled()) return;
   if (tablesInitialized) return;
   if (initializationPromise) return initializationPromise;
 
