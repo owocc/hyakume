@@ -315,6 +315,7 @@ pnpm run dev
 | :--- | :--- |
 | `pnpm run dev` | 启动本地 Vinext 开发服务器（支持 RSC 热更新与快速构建） |
 | `pnpm run build` | 构建用于 Cloudflare Worker 生产环境的 Client 和 Server 产物 |
+| `pnpm run build:cloudflare` | 供 Cloudflare Workers Builds 使用：基线化、迁移数据库后构建产物 |
 | `pnpm run start` | 使用本地 Wrangler 模拟器启动已构建好的 Worker 产物 |
 | `pnpm run deploy` | 构建并将服务部署上线至 Cloudflare Workers 平台 |
 | `pnpm run db:generate` | 基于 `lib/db/schema.ts` 生成 SQL 迁移脚本文件 |
@@ -383,23 +384,27 @@ npx wrangler secret put GITHUB_CLIENT_ID
 npx wrangler secret put GITHUB_CLIENT_SECRET
 ```
 
-### 4. 自动迁移并部署
+### 4. Cloudflare Workers 部署时自动迁移
 
-`.github/workflows/deploy.yml` 会在合并请求时校验 migration 历史并构建应用；每次推送到 `main` 时，按以下顺序自动执行：
+使用 Cloudflare Workers Builds 部署时，在 Cloudflare Dashboard 的 **Workers & Pages → hyakume → Settings → Builds** 设置：
 
-1. 检测旧版运行时自动建表的数据库，并记录已存在 schema 对应的 migration 历史；
+1. 将生产触发分支限定为 `main`；若启用其他分支的预览部署，请为其配置独立数据库，避免预览构建修改生产数据库；
+2. 将 **Build command** 设为 `pnpm run build:cloudflare`；
+3. 保持现有的 **Deploy command** 配置不变；
+4. 在 **Build variables and secrets** 添加 `DATABASE_URL`，其连接用户必须具备执行 DDL 的权限。
+
+`build:cloudflare` 固定按以下顺序执行：
+
+1. 识别旧版运行时自动建表的数据库，并记录已有 schema 对应的 migration 历史；
 2. 执行全部待运行的 Drizzle migration；
-3. 仅在迁移成功后部署 Cloudflare Worker。
+3. 构建 Worker。任一步失败都会终止 Cloudflare 部署。
 
-部署任务为串行队列，避免两个版本同时迁移或后提交的版本先部署。首次启用前，在 GitHub 仓库的 **Settings → Secrets and variables → Actions** 添加：
+`DATABASE_URL` 作为 Build secret 与 Worker 运行时 secret 相互独立。应用运行时仍需要在 **Variables and Secrets** 中配置同一连接串。修改 Cloudflare 构建设置后，重新部署 `main` 即可创建缺失的 `ingestion_drafts` 表。
 
-- `DATABASE_URL`：具备 DDL 权限的生产 PostgreSQL / Neon 连接串；
-- `CLOUDFLARE_API_TOKEN`：具备 Workers 部署权限的 API Token；
-- `CLOUDFLARE_ACCOUNT_ID`：Cloudflare 账户 ID。
-
-之后将变更合并到 `main` 即可完成迁移和部署。紧急手动部署仍可执行：
+GitHub Actions 仅校验 migration 历史和构建，不参与 Cloudflare 生产部署。
 
 ```bash
+# 非 Cloudflare Builds 场景下的手动发布顺序
 pnpm run db:baseline
 pnpm run db:migrate
 pnpm run deploy

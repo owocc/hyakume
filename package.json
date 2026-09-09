@@ -44,6 +44,7 @@
     "typecheck": "tsc --noEmit",
     "dev": "vinext dev",
     "build": "vinext build",
+    "build:cloudflare": "pnpm run db:baseline && pnpm run db:migrate && vinext build",
     "start": "wrangler dev --config dist/server/wrangler.json",
     "deploy": "vinext-cloudflare deploy --config dist/server/wrangler.json",
     "db:generate": "drizzle-kit generate",

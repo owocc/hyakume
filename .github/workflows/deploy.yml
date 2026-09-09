@@ -1,4 +1,4 @@
-name: Deploy production
+name: Verify production build
 
 on:
   push:
@@ -9,10 +9,6 @@ on:
 
 permissions:
   contents: read
-
-concurrency:
-  group: hyakume-production-deploy
-  cancel-in-progress: false
 
 jobs:
   verify:
@@ -33,29 +29,3 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm run db:check
       - run: pnpm run build
-
-  deploy:
-    name: Migrate database and deploy Worker
-    needs: verify
-    if: github.event_name != 'pull_request'
-    runs-on: ubuntu-latest
-    env:
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 11.21.0
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm run db:baseline
-      - run: pnpm run db:migrate
-      - run: pnpm run deploy
