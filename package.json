@@ -48,6 +48,8 @@
     "deploy": "vinext-cloudflare deploy --config dist/server/wrangler.json",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
+    "db:baseline": "tsx scripts/baseline-migrations.ts",
+    "db:check": "drizzle-kit check",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio"
   }
