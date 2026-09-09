@@ -12,6 +12,7 @@
     "drizzle-orm": "^0.45.2",
     "lucide-react": "^1.41.0",
     "next-intl": "^4.14.2",
+    "parse5": "^8.0.1",
     "pg": "^8.23.0",
     "react": "latest",
     "react-dom": "latest",
@@ -39,6 +40,8 @@
   },
   "type": "module",
   "scripts": {
+    "test": "tsx --test lib/seo.test.ts lib/agent/*.test.ts lib/ingestion/*.test.ts",
+    "typecheck": "tsc --noEmit",
     "dev": "vinext dev",
     "build": "vinext build",
     "start": "wrangler dev --config dist/server/wrangler.json",

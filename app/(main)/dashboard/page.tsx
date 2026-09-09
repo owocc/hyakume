@@ -165,7 +165,7 @@ function DashboardContent() {
             // If any active task transitioned from processing to completed, refresh publications silently!
             const hasNewlyCompleted = json.tasks.some((newTask) => {
               const old = prevTasks.find((p) => p.id === newTask.id);
-              return old?.status === "processing" && newTask.status === "completed";
+              return old?.status !== "completed" && newTask.status === "completed";
             });
             if (hasNewlyCompleted) {
               fetchPublications(scope, { silent: true });
@@ -202,7 +202,7 @@ function DashboardContent() {
   }, [tasks, scope]);
 
   const activeTasks = useMemo(
-    () => tasks.filter((t) => t.status === "processing"),
+    () => tasks.filter((t) => t.status === "processing" || t.status === "awaiting_confirmation"),
     [tasks]
   );
   const userName = session?.user?.name || session?.user?.email?.split("@")[0] || "User";
@@ -732,7 +732,8 @@ function DashboardContent() {
                 ) : (
                   <div className="space-y-3">
                     {tasks.slice(0, 5).map((task) => {
-                      const isProcessing = task.status === "processing";
+                      const isAwaitingConfirmation = task.status === "awaiting_confirmation";
+                      const isProcessing = task.status === "processing" || isAwaitingConfirmation;
                       const isFailed = task.status === "failed";
                       const isCompleted = task.status === "completed";
                       const isArticleTask =
@@ -761,7 +762,7 @@ function DashboardContent() {
                                 }`}
                               >
                                 {isProcessing ? (
-                                  <RotateCcw className="w-4 h-4 animate-spin" />
+                                  <RotateCcw className={`w-4 h-4 ${isAwaitingConfirmation ? "" : "animate-spin"}`} />
                                 ) : isCompleted ? (
                                   <CheckCircle2 className="w-4 h-4" />
                                 ) : (
@@ -784,7 +785,7 @@ function DashboardContent() {
                                     }`}
                                   >
                                     {isProcessing
-                                      ? "处理中"
+                                      ? isAwaitingConfirmation ? "待确认" : "处理中"
                                       : isCompleted
                                       ? "已完成"
                                       : "处理失败"}

@@ -89,6 +89,16 @@ CREATE INDEX IF NOT EXISTS idx_articles_app_id ON articles(app_id);
 CREATE INDEX IF NOT EXISTS idx_articles_created_at ON articles(created_at);
 CREATE INDEX IF NOT EXISTS idx_articles_user_id ON articles(user_id);
 
+CREATE TABLE IF NOT EXISTS ingestion_drafts (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  payload TEXT NOT NULL,
+  created_at BIGINT NOT NULL,
+  confirmed_at BIGINT,
+  app_id TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_ingestion_drafts_user_id ON ingestion_drafts(user_id);
+
 CREATE TABLE IF NOT EXISTS tasks (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL,

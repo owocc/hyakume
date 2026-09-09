@@ -128,7 +128,7 @@ export interface PipelineTaskItem {
   user_id: string;
   url: string;
   domain?: string;
-  status: "processing" | "completed" | "failed";
+  status: "processing" | "awaiting_confirmation" | "completed" | "failed";
   step: number;
   step_name: string;
   progress: number;

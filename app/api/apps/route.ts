@@ -1,5 +1,4 @@
-import { getAllApps, insertApp } from "@/lib/db";
-import type { AppItem } from "@/lib/types";
+import { getAllApps } from "@/lib/db";
 import { auth } from "@/lib/auth";
 
 export async function GET(request: Request) {
@@ -29,16 +28,10 @@ export async function POST(request: Request) {
       );
     }
 
-    const body = (await request.json()) as AppItem;
-    if (!body.name || !body.url) {
-      return Response.json({ success: false, error: "Name and URL are required" }, { status: 400 });
-    }
-
-    const app = await insertApp({
-      ...body,
-      user_id: session.user.id,
-    });
-    return Response.json({ success: true, app }, { status: 201 });
+    return Response.json({
+      success: false,
+      error: "直接发布已停用。请通过 /api/analyze 或 /api/analyze/manual 准备草稿，再通过 /api/analyze/confirm 确认发布。",
+    }, { status: 409 });
   } catch (err) {
     console.error("Failed to create app:", err);
     return Response.json({ success: false, error: "Failed to create app" }, { status: 500 });

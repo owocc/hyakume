@@ -26,7 +26,7 @@
 **Hyakume** 是一个基于 **Edge-Native 边缘计算**、**React Server Components (RSC)** 与 **AI 自动化 Agent** 构建的现代化 Web App 精选聚合与推荐平台。
 
 我们打破了传统目录网站呆板的列表呈现模式，以 **Apple App Store** 级别的沉浸式视觉体验为标杆，赋予 Web 网页应用以一等公民的质感：
-- 🔍 **智能全自动收录**：只需输入一个 URL（支持普通 Web 应用、GitHub 开源项目、个人主页等），自动化 Agent 即可在数十秒内完成**多端网页快照渲染、DOM/Meta 元数据提取、多模型 AI 核心价值分析、智能分类打标、多端截图持久化与数据库归档**。
+- 🔍 **辅助收录与人工确认**：输入 URL 后，程序提取 SEO 和快照，Agent 整理有来源依据的候选内容；核对表单后才正式发布。解析失败时可手动上传或补充资料。
 - 📱 **多端全景预览**：集成 Cloudflare Browser Rendering，实时捕获应用在 **PC（桌面端）、平板、手机（移动端）** 三端的交互界面快照。
 - 📝 **AI 深度测评生成**：基于网页语义内容，由大模型自动撰写专业深度评测与使用导览，打造专属的应用发布专栏。
 - ⚡ **极致边缘性能**：全栈部署于 Cloudflare Workers，结合 Cloudflare R2 对象存储、KV 高速缓存、CDN 边缘加速，实现全球毫秒级响应。
@@ -48,27 +48,15 @@
   - `Web`（精选站点）：现代化前端项目、创新 Web 体验与技术试验田。
   - `Categories`（分类专题）：工具、AI、WEB、游戏等多维度标签筛选与即时搜索。
 
-### 2. 🤖 5 步全自动化 AI Ingestion 收录流水线
-提交 URL 后，后台自动化 Pipeline 将实时推进以下 5 个阶段，并在前台以动态交互卡片与终端日志形式同步进度：
-1. **页面渲染与多端快照 (Snapshot)**：
-   - 调度 Cloudflare Browser Rendering (`@cloudflare/puppeteer`) 自动化拉起无头浏览器；
-   - 针对 `1440×900` (PC)、`768×1024` (平板)、`390×844` (手机) 三种典型 Viewport 截取高清界面；
-   - 智能容灾兜底：当环境无 Headless 浏览器时，自动解析 OpenGraph / Twitter Card，或实时动态合成精美 16:9 矢量 SVG 封面。
-2. **元数据与结构提取 (Metadata Extraction)**：
-   - 智能解析页面 DOM 树与 `<meta>` 标签（Title、Description、Keywords、Theme Color 等）；
-   - 自动推导和拉取高清 Favicon 与 Apple Touch Icon；
-   - 过滤无意义样式与脚本，提炼有效语义文本（Semantic Content）。
-3. **多端截图上传与存储 (Storage & CDN)**：
-   - 将渲染快照与图片资产自动化上传至 **Cloudflare R2** 对象存储；
-   - 本地开发环境提供 `.data/images/` 磁盘回退与代理端点，开发体验零摩擦；
-   - 自动化配置全局 CDN 缓存与静态优化头。
-4. **AI Agent 智能分析与打标 (AI Categorization & Tagging)**：
-   - 将抓取内容喂入 AI 大语言模型；
-   - 自动生成精炼的一句话 Slogan（Tagline）、核心特色清单（Preview Features）、详细中文介绍与初始评分；
-   - 智能识别目标类型（GitHub 仓库、个人主页、Web 应用），并归类至对应核心分类。
-5. **结构化持久化与发布 (Persistence & Publishing)**：
-   - 自动去重校验与域名规范化；
-   - 写入 **PostgreSQL / Neon** 数据库，建立用户绑定与搜索索引，应用即刻上线。
+### 2. 🤖 可核对的收录流水线
+提交 URL 或手动上传后，内容先保存为草稿，不会自动发布：
+1. **程序提取 SEO**：浏览器 DOM 和 HTTP 使用同一 HTML 解析器，按固定优先级提取 title、description、keywords、canonical、OpenGraph、Twitter、图标与主题色。保留原始来源；无法访问、验证页和缺失字段会明确提示，不伪造数据。
+2. **快照与 Agent 整理**：截图失败不丢失 SEO；Agent 只提取有来源依据的文字和分类。输出需经过结构校验，失败时保留原文，不生成通用宣传文案、评分或虚构特色。
+3. **手动补充与表单核对**：支持 HTML、TXT、Markdown、JSON 文件（UTF-8，最大 1 MB）、粘贴文本或直接填写。原始 SEO 只读，发布字段可编辑；每次修改都需要重新勾选确认。
+4. **确认发布**：服务端再次校验内容、用户身份和草稿归属，确认后才写入应用/子页面。草稿 7 天内可恢复；重复确认不会重复发布。子页面不会覆盖已有主应用。
+5. **文章独立生成**：应用确认收录后可单独生成文章；内容不足或 AI 失败时不发布兜底文章。
+
+目录、API、部署与测试说明见 [收录流程文档](docs/ingestion.md)。
 
 ### 3. ✍️ AI 智能深度评测与文章生成
 - **一键深度评测**：用户可在后台对已收录或新提交的 Web App 触发文章生成。
@@ -106,7 +94,7 @@ flowchart TB
 
     subgraph Pipeline["AI 智能收录流水线 (Ingestion Engine)"]
         Crawler["Crawler Engine (@cloudflare/puppeteer)"]
-        FallbackCrawler["HTTP Fetch & SVG 矢量回退卡片"]
+        FallbackCrawler["HTTP Fetch & SEO 解析"]
         AI_Agent["AI Agent 语义分析与文章生成"]
     end
 
@@ -159,7 +147,7 @@ web-stores/
 │   │   ├── page.tsx              # 首页 (Hero、BookFan、精选画廊、分类汇总)
 │   │   ├── article/generate/     # AI 深度评测文章生成工具页
 │   │   ├── dashboard/            # 用户个人中心（我的发布、任务状态）
-│   │   └── recommend/            # 提交收录与 5 步流水线实时进度页面
+│   │   └── recommend/            # 提交收录、手动上传与表单确认页面
 │   ├── (sidebar)/                # 带有 App Store 风格左侧导航栏的内容布局
 │   │   ├── today/page.tsx        # 今日推荐专题 (App Store Today 体验)
 │   │   ├── apps/page.tsx         # Apps 应用专区
@@ -191,7 +179,9 @@ web-stores/
 │   ├── theme-provider.tsx        # 深色/浅色模式切换 Provider
 │   └── language-switcher.tsx     # 中英双语切换器
 ├── lib/                          # 核心业务逻辑与工具库
-│   ├── agent.ts                  # AI 大模型 Prompt 工程、分析与文章撰写核心
+│   ├── agent/                    # 集中的 AI 配置、调用、提示词、解析校验与文章生成
+│   ├── ingestion/                # 草稿准备、上传、表单校验与确认入库
+│   ├── seo.ts                    # 确定性的 SEO 提取与原始来源
 │   ├── crawler.ts                # Puppeteer 多端快照抓取、DOM 元数据解析与降级
 │   ├── storage.ts                # Cloudflare R2 上传与本地存储适配器
 │   ├── auth.ts                   # Better-Auth 服务端配置与 Drizzle 适配

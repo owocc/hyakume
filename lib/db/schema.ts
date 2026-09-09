@@ -140,7 +140,7 @@ export const tasksTable = pgTable(
     user_id: text("user_id").notNull(),
     url: text("url").notNull(),
     domain: text("domain"),
-    status: text("status").default("processing").notNull(), // "processing" | "completed" | "failed"
+    status: text("status").default("processing").notNull(),
     step: integer("step").default(1).notNull(), // 1 to 5
     step_name: text("step_name").default("页面渲染与快照截取").notNull(),
     progress: integer("progress").default(20).notNull(), // 0 to 100
@@ -156,6 +156,15 @@ export const tasksTable = pgTable(
     index("idx_tasks_created_at").on(table.created_at),
   ]
 );
+export const ingestionDraftsTable = pgTable("ingestion_drafts", {
+  id: text("id").primaryKey(),
+  user_id: text("user_id").notNull(),
+  payload: text("payload").notNull(),
+  created_at: bigint("created_at", { mode: "number" }).notNull(),
+  confirmed_at: bigint("confirmed_at", { mode: "number" }),
+  app_id: text("app_id"),
+}, (table) => [index("idx_ingestion_drafts_user_id").on(table.user_id)]);
+
 export const appsRelations = relations(appsTable, ({ many }) => ({
   reviews: many(reviewsTable),
   subpages: many(subpagesTable),
